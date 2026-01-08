@@ -19,14 +19,14 @@ function Start-InNewWindow {
 }
 
 Write-Host "[1] Iniciando Backend (Django)..." -ForegroundColor Yellow
-$backend_cmd = "& '$(Join-Path $root_dir 'backend' 'venv' 'Scripts' 'activate.ps1')'; python manage.py runserver"
-Start-InNewWindow -Title "Backend - Oficina Moto" -WorkingDirectory "$root_dir\backend" -Command $backend_cmd
+$backend_cmd = "& '$(Join-Path $root_dir 'oficinamoto' 'backend' 'venv' 'Scripts' 'activate.ps1')'; python manage.py runserver"
+Start-InNewWindow -Title "Backend - Oficina Moto" -WorkingDirectory "$root_dir\oficinamoto\backend" -Command $backend_cmd
 
 Start-Sleep -Seconds 3
 
 Write-Host "[2] Iniciando Frontend (Vue 3)..." -ForegroundColor Yellow
 $frontend_cmd = "npm run dev"
-Start-InNewWindow -Title "Frontend - Oficina Moto" -WorkingDirectory "$root_dir\frontend" -Command $frontend_cmd
+Start-InNewWindow -Title "Frontend - Oficina Moto" -WorkingDirectory "$root_dir\oficinamoto\frontend" -Command $frontend_cmd
 
 Write-Host ""
 Write-Host "============================================" -ForegroundColor Green

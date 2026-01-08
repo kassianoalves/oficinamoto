@@ -21,7 +21,7 @@ npm --version
 
 ### 2. Preparar Backend
 
-Abra PowerShell ou CMD na pasta `backend/`:
+Abra PowerShell ou CMD na pasta `oficinamoto/backend/`:
 
 ```bash
 # Criar ambiente virtual
@@ -47,7 +47,7 @@ python manage.py runserver
 
 ### 3. Preparar Frontend
 
-Abra PowerShell ou CMD na pasta `frontend/`:
+Abra PowerShell ou CMD na pasta `oficinamoto/frontend/`:
 
 ```bash
 # Instalar dependências

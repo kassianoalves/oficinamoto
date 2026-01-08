@@ -13,7 +13,7 @@ Sistema completo de gerenciamento de clientes e motos para oficinas, construído
 ### 1️⃣ Backend Setup
 
 ```bash
-cd backend
+cd oficinamoto/backend
 
 # Criar ambiente virtual
 python -m venv venv
@@ -42,7 +42,7 @@ python manage.py runserver
 ### 2️⃣ Frontend Setup
 
 ```bash
-cd frontend
+cd oficinamoto/frontend
 
 # Instalar dependências
 npm install
