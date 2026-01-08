@@ -77,18 +77,20 @@ export default {
     const carregarMotos = async () => {
       try {
         const res = await api.get('/motos/')
-        motos.value = res.data.results || res.data
+        motos.value = res.data.results || res.data || []
       } catch (error) {
         console.error('Erro ao carregar motos:', error)
+        alert('Erro ao carregar motos')
       }
     }
 
     const carregarClientes = async () => {
       try {
         const res = await api.get('/clientes/')
-        clientes.value = res.data.results || res.data
+        clientes.value = res.data.results || res.data || []
       } catch (error) {
         console.error('Erro ao carregar clientes:', error)
+        alert('Erro ao carregar clientes')
       }
     }
 
@@ -101,14 +103,17 @@ export default {
       try {
         if (editingId.value) {
           await api.put(`/motos/${editingId.value}/`, form.value)
+          alert('Moto atualizada com sucesso!')
         } else {
           await api.post('/motos/', form.value)
+          alert('Moto salva com sucesso!')
         }
         resetForm()
         carregarMotos()
       } catch (error) {
         console.error('Erro ao salvar moto:', error)
-        alert('Erro ao salvar moto')
+        const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || 'Erro ao salvar moto'
+        alert(errorMsg)
       }
     }
 

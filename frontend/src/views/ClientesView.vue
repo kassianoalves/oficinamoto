@@ -68,25 +68,38 @@ export default {
 
     const carregarClientes = async () => {
       try {
+        console.log('Carregando clientes...')
         const res = await api.get('/clientes/')
-        clientes.value = res.data.results || res.data
+        console.log('Resposta recebida:', res.data)
+        clientes.value = res.data.results || res.data || []
+        console.log('Clientes carregados:', clientes.value)
       } catch (error) {
-        console.error('Erro ao carregar clientes:', error)
+        console.error('Erro ao carregar clientes:', error.message)
+        console.error('Erro completo:', error)
+        alert('Erro ao carregar clientes: ' + error.message)
       }
     }
 
     const salvarCliente = async () => {
       try {
+        console.log('Salvando cliente:', form.value)
         if (editingId.value) {
-          await api.put(`/clientes/${editingId.value}/`, form.value)
+          const res = await api.put(`/clientes/${editingId.value}/`, form.value)
+          console.log('Cliente atualizado:', res.data)
+          alert('Cliente atualizado com sucesso!')
         } else {
-          await api.post('/clientes/', form.value)
+          const res = await api.post('/clientes/', form.value)
+          console.log('Cliente criado:', res.data)
+          alert('Cliente salvo com sucesso!')
         }
         resetForm()
         carregarClientes()
       } catch (error) {
-        console.error('Erro ao salvar cliente:', error)
-        alert('Erro ao salvar cliente')
+        console.error('Erro ao salvar cliente:', error.message)
+        console.error('Status:', error.response?.status)
+        console.error('Dados:', error.response?.data)
+        const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || error.message || 'Erro ao salvar cliente'
+        alert('Erro: ' + errorMsg)
       }
     }
 

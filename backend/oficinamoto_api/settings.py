@@ -112,7 +112,32 @@ REST_FRAMEWORK = {
 # CORS Settings
 CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:5173",
+    "http://127.0.0.1:5174",
+    "http://127.0.0.1:5175",
+    "http://localhost:5173",
+    "http://localhost:5174",
+    "http://localhost:5175",
     "http://127.0.0.1:8000",
+    "http://10.0.0.146:5173",
+    "http://10.0.0.146:5174",
+    "http://10.0.0.146:5175",
 ]
 
-CORS_ALLOW_CREDENTIALS = True
+# Permitir credenciais
+# CORS_ALLOW_CREDENTIALS = True  # Desabilitado - conflita com ALLOW_ALL
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
+
+CORS_EXPOSE_HEADERS = [
+    'content-type',
+    'x-csrftoken',
+]

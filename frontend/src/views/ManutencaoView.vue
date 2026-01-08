@@ -85,18 +85,20 @@ export default {
     const carregarAgendamentos = async () => {
       try {
         const res = await api.get('/agendamentos/')
-        agendamentos.value = res.data.results || res.data
+        agendamentos.value = res.data.results || res.data || []
       } catch (error) {
         console.error('Erro ao carregar agendamentos:', error)
+        alert('Erro ao carregar agendamentos')
       }
     }
 
     const carregarMotos = async () => {
       try {
         const res = await api.get('/motos/')
-        motos.value = res.data.results || res.data
+        motos.value = res.data.results || res.data || []
       } catch (error) {
         console.error('Erro ao carregar motos:', error)
+        alert('Erro ao carregar motos')
       }
     }
 
@@ -129,14 +131,17 @@ export default {
       try {
         if (editingId.value) {
           await api.put(`/agendamentos/${editingId.value}/`, form.value)
+          alert('Agendamento atualizado com sucesso!')
         } else {
           await api.post('/agendamentos/', form.value)
+          alert('Agendamento salvo com sucesso!')
         }
         resetForm()
         carregarAgendamentos()
       } catch (error) {
         console.error('Erro ao salvar agendamento:', error)
-        alert('Erro ao salvar agendamento')
+        const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || 'Erro ao salvar agendamento'
+        alert(errorMsg)
       }
     }
 
