@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import socket
 
 # Build paths
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -10,7 +11,28 @@ SECRET_KEY = 'django-insecure-dev-key-change-in-production'
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['*']
+# Detectar hosts dinamicamente
+def get_allowed_hosts():
+    """Gera lista de hosts permitidos dinamicamente"""
+    hosts = [
+        '127.0.0.1',
+        'localhost',
+        '*',  # Em desenvolvimento, aceita todos
+    ]
+    
+    # Tentar adicionar o hostname da máquina
+    try:
+        hosts.append(socket.gethostname())
+        # Tentar adicionar o IP local real
+        ip = socket.gethostbyname(socket.gethostname())
+        if ip:
+            hosts.append(ip)
+    except:
+        pass
+    
+    return list(set(hosts))
+
+ALLOWED_HOSTS = get_allowed_hosts()
 
 # Application definition
 INSTALLED_APPS = [
@@ -110,38 +132,17 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 50
 }
 
-# CORS Settings
-CORS_ALLOWED_ORIGINS = [
-    "http://127.0.0.1:5173",
-    "http://127.0.0.1:5174",
-    "http://127.0.0.1:5175",
-    "http://localhost:5173",
-    "http://localhost:5174",
-    "http://localhost:5175",
-    "http://127.0.0.1:8000",
-    "http://10.0.0.146:5173",
-    "http://10.0.0.146:5174",
-    "http://10.0.0.146:5175",
-]
-
-# Permitir credenciais
-# CORS_ALLOW_CREDENTIALS = True  # Desabilitado - conflita com ALLOW_ALL
-CORS_ALLOW_HEADERS = [
-    'accept',
-    'accept-encoding',
-    'authorization',
-    'content-type',
-    'dnt',
-    'origin',
-    'user-agent',
-    'x-csrftoken',
-    'x-requested-with',
-]
-
-CORS_EXPOSE_HEADERS = [
-    'content-type',
-    'x-csrftoken',
-]
+# CORS Settings - Em desenvolvimento, permitir qualquer origem
+# Em produção, isso deve ser restritivo
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    # Para produção, defina os hosts específicos
+    CORS_ALLOWED_ORIGINS = [
+        "http://localhost:5173",
+        "http://localhost:3000",
+        # Adicione seus domínios de produção aqui
+    ]
 
 # Email Configuration (Console Backend para desenvolvimento)
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
