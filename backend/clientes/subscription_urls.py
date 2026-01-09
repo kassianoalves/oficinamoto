@@ -1,6 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from . import subscription_views
+from .site_views import SiteSettingsView
 
 router = DefaultRouter()
 router.register(r'plans', subscription_views.PlanViewSet, basename='plan')
@@ -11,4 +12,5 @@ urlpatterns = [
     path('', include(router.urls)),
     path('upgrade-pro/', subscription_views.upgrade_pro, name='upgrade-pro'),
     path('cancel-subscription/', subscription_views.cancel_subscription, name='cancel-subscription'),
+    path('site-settings/', SiteSettingsView.as_view(), name='site-settings'),
 ]

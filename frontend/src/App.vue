@@ -2,7 +2,14 @@
   <div id="app" class="app-container">
     <nav v-if="!isAuthPage" class="navbar">
       <div class="logo">
-        <h1>🏍️ Moto Express</h1>
+        <!-- <img :src="logoImage" alt="Logo" class="logo-img" /> -->
+        <img v-if="siteLogo" :src="siteLogo" alt="Logo" class="logo-img" />
+        <div class="logo-text">
+          <button v-if="isAdmin" @click="openLogoModal" class="btn-edit-logo" title="Editar logo e nome do site">
+            ✏️
+          </button>
+          <h1>{{ siteName }}</h1>
+        </div>
       </div>
       <div class="nav-sections">
         <ul class="nav-menu">
@@ -31,19 +38,17 @@
               <li v-if="isEnterprise"><router-link to="/manuais" class="dropdown-item enterprise">📚 Manuais</router-link></li>
             </ul>
           </li>
-          
-          <!-- Menu para todos -->
-          <li class="menu-separator">|</li>
-          <li v-if="isAuthenticated"><router-link to="/planos" class="menu-plans">💎 Planos</router-link></li>
         </ul>
-        <div class="nav-actions">
+        <div class="nav-right">
+          <router-link v-if="isAuthenticated" to="/planos" class="menu-plans">💎 Planos</router-link>
+          <div class="nav-actions">
           <template v-if="!isAuthenticated">
             <router-link class="nav-btn" to="/login">Login</router-link>
             <router-link class="nav-btn nav-btn-primary" to="/register">Cadastrar</router-link>
           </template>
           <template v-else>
             <button @click="openProfileModal" class="btn-user-profile" :title="`Plano: ${getPlanName()}`">
-              <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" class="user-avatar" />
+              <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" :class="['user-avatar', avatarBorderClass]" />
               {{ displayName }}
               <span v-if="isPro" class="badge badge-pro">PRO</span>
               <span v-if="isEnterprise" class="badge badge-enterprise">ENTERPRISE</span>
@@ -51,6 +56,7 @@
             </button>
             <button @click="logout" class="btn-logout">Sair</button>
           </template>
+          </div>
         </div>
       </div>
     </nav>
@@ -63,6 +69,13 @@
       @close="showProfile = false"
       @update="handleProfileUpdate"
     />
+    <LogoUploadModal
+      :show="showLogoModal"
+      :currentLogo="siteLogo"
+      :siteName="siteName"
+      @close="showLogoModal = false"
+      @update="handleLogoUpdate"
+    />
     <ToastNotification />
   </div>
 </template>
@@ -73,13 +86,16 @@ import { useRouter, useRoute } from 'vue-router'
 import api from '@/api.js'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ProfileModal from '@/components/ProfileModal.vue'
+import LogoUploadModal from '@/components/LogoUploadModal.vue'
 import avatarPlaceholder from '@/assets/avatar-placeholder.svg'
+// import logoImage from '@/assets/logo.png'  // Descomente após adicionar logo.png em src/assets/
 
 export default {
   name: 'App',
   components: {
     ToastNotification,
-    ProfileModal
+    ProfileModal,
+    LogoUploadModal
   },
   setup() {
     const router = useRouter()
@@ -93,6 +109,10 @@ export default {
     const isEnterprise = ref(false)
     const isFree = ref(false)
     const showDropdown = ref(false)
+    const showLogoModal = ref(false)
+    const siteLogo = ref('')
+    const siteName = ref('Moto Express')
+    const isAdmin = computed(() => userData.value.is_admin || false)
 
     const displayName = computed(() => {
       if (userData.value.first_name && userData.value.last_name) {
@@ -216,6 +236,33 @@ export default {
       username.value = updatedUser.username || updatedUser.email
     }
 
+    const openLogoModal = () => {
+      showLogoModal.value = true
+    }
+
+    const handleLogoUpdate = (settings) => {
+      if (settings.logo_url) {
+        siteLogo.value = withBust(settings.logo_url)
+      }
+      if (settings.site_name) {
+        siteName.value = settings.site_name
+      }
+    }
+
+    const loadSiteSettings = async () => {
+      try {
+        const res = await api.get('/subscription/site-settings/')
+        if (res.data.logo_url) {
+          siteLogo.value = res.data.logo_url
+        }
+        if (res.data.site_name) {
+          siteName.value = res.data.site_name
+        }
+      } catch (err) {
+        console.log('Usando configurações padrão')
+      }
+    }
+
     const logout = () => {
       localStorage.removeItem('authToken')
       localStorage.removeItem('user')
@@ -228,6 +275,7 @@ export default {
 
     onMounted(() => {
       checkAuth()
+      loadSiteSettings()
       router.afterEach(() => {
         checkAuth()
       })
@@ -256,7 +304,12 @@ export default {
       ,avatarInitials
       ,avatarBorderClass
       ,currentPlan
-      ,isAuthPage
+      ,isAuthPage      ,showLogoModal
+      ,siteLogo
+      ,siteName
+      ,isAdmin
+      ,openLogoModal
+      ,handleLogoUpdate      // ,logoImage  // Descomente após adicionar logo.png
     }
   }
 }
@@ -290,16 +343,54 @@ body {
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.logo-text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+.logo-img {
+  height: 45px;
+  width: auto;
+  object-fit: contain;
+}
+
 .logo h1 {
   font-size: 1.8rem;
   font-weight: 700;
   white-space: nowrap;
 }
 
+.btn-edit-logo {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.4);
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.75rem;
+  transition: all 0.2s;
+  opacity: 0.9;
+  z-index: 10;
+}
+
+.btn-edit-logo:hover {
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 1;
+  transform: scale(1.5);
+}
+
 .nav-sections {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 1.5rem;
   flex: 1;
   position: relative;
@@ -311,13 +402,17 @@ body {
   list-style: none;
   gap: 0.5rem;
   align-items: center;
-  margin: 0;
+  margin: 0 auto 0 0;
   padding: 0;
   flex-wrap: wrap;
-  flex: 1;
-  justify-content: center;
-  position: relative;
   z-index: 1;
+}
+
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-left: auto;
 }
 
 .nav-menu li {
@@ -360,9 +455,15 @@ body {
 .menu-plans {
   background: linear-gradient(135deg, rgba(255, 182, 193, 0.2), rgba(255, 192, 203, 0.2));
   border-left: 3px solid #FF69B4;
-}
-.menu-plans.inline {
-  margin-right: 0.5rem;
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 0.55rem 0.9rem;
+  border-radius: 6px;
+  transition: all 0.3s;
+  display: block;
+  white-space: nowrap;
 }
 
 .menu-plans:hover {
@@ -516,6 +617,30 @@ body {
   align-items: center;
   justify-content: center;
   background: rgba(255,255,255,0.2);
+}
+
+.user-avatar.border-free {
+  border: 3px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 0 8px rgba(79, 172, 254, 0.5);
+}
+
+.user-avatar.border-pro {
+  border: 3px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
+}
+
+.user-avatar.border-enterprise {
+  border: 3px solid transparent;
+  background-image: linear-gradient(white, white), linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  box-shadow: 0 0 12px rgba(255, 215, 0, 0.6);
 }
 
 .btn-user-profile:hover {

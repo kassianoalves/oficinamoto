@@ -156,10 +156,11 @@ class UserSerializer(serializers.ModelSerializer):
     telefone = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
     avatar_thumb = serializers.SerializerMethodField()
+    is_admin = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'idade', 'telefone', 'avatar', 'avatar_thumb']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'idade', 'telefone', 'avatar', 'avatar_thumb', 'is_admin']
     
     def get_idade(self, obj):
         try:
@@ -172,6 +173,9 @@ class UserSerializer(serializers.ModelSerializer):
             return obj.profile.telefone
         except:
             return ''
+    
+    def get_is_admin(self, obj):
+        return obj.is_staff or obj.is_superuser
 
     def get_avatar(self, obj):
         try:

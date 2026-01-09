@@ -9,6 +9,9 @@ from io import BytesIO
 from PIL import Image
 import re
 
+# Import SiteSettings
+from .site_models import SiteSettings
+
 def validate_cpf(value):
     """Valida formato de CPF (000.000.000-00 ou 00000000000)"""
     cpf = re.sub(r'\D', '', value)

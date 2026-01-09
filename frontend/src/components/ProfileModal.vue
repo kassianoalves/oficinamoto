@@ -518,6 +518,46 @@ export default {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
+.admin-section {
+  margin-top: 24px;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(102, 126, 234, 0.05), rgba(118, 75, 162, 0.05));
+  border: 2px solid rgba(102, 126, 234, 0.2);
+  border-radius: 8px;
+}
+
+.admin-header {
+  margin-bottom: 12px;
+}
+
+.admin-badge {
+  display: inline-block;
+  padding: 6px 12px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.btn-edit-logo {
+  width: 100%;
+  padding: 12px 16px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-edit-logo:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
 .form-actions {
   display: flex;
   gap: 10px;

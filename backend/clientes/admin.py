@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Cliente, UserProfile, Plan, Subscription, Fornecedor, ProdutoLoja, ManualsBase
+from .site_models import SiteSettings
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
@@ -83,3 +84,17 @@ class ManualsBaseAdmin(admin.ModelAdmin):
             'fields': ('ferramentas_necessarias', 'ativo', 'data_criacao')
         }),
     )
+
+
+@admin.register(SiteSettings)
+class SiteSettingsAdmin(admin.ModelAdmin):
+    list_display = ['site_name', 'logo', 'updated_at']
+    readonly_fields = ['created_at', 'updated_at']
+    
+    def has_add_permission(self, request):
+        # Permitir apenas 1 instância (singleton)
+        return not SiteSettings.objects.exists()
+    
+    def has_delete_permission(self, request, obj=None):
+        # Não permitir deletar a configuração
+        return False
