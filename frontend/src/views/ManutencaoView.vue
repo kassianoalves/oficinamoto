@@ -109,12 +109,11 @@ export default {
     const agendamentosFiltrados = computed(() => {
       let lista = agendamentos.value
       
-      // Se não houver filtro específico, oculta os concluídos
-      if (!filtroStatus.value) {
-        lista = lista.filter(a => a.status !== 'concluido')
-      } else {
+      // Se houver filtro específico, filtra por esse status
+      if (filtroStatus.value) {
         lista = lista.filter(a => a.status === filtroStatus.value)
       }
+      // Se não houver filtro, mostra TODOS os agendamentos
       
       return lista
     })

@@ -4,10 +4,10 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 
-from clientes.views import ClienteViewSet
+from clientes.views import ClienteViewSet, ProdutoLojaViewSet, Imagem3DViewSet, ManualsBaseViewSet
 from clientes.auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView, UserDetailView, LogoutView
 from motos.views import MotoViewSet, PecaViewSet
-from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet
+from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet
 
 router = DefaultRouter()
 router.register(r'clientes', ClienteViewSet, basename='cliente')
@@ -15,6 +15,12 @@ router.register(r'motos', MotoViewSet, basename='moto')
 router.register(r'pecas', PecaViewSet, basename='peca')
 router.register(r'manutencoes', ManutencaoViewSet, basename='manutencao')
 router.register(r'agendamentos', AgendamentoViewSet, basename='agendamento')
+router.register(r'lembretes', LembreteViewSet, basename='lembrete')
+router.register(r'pontos-fidelidade', PontosFidelidadeViewSet, basename='pontos-fidelidade')
+router.register(r'produtos-loja', ProdutoLojaViewSet, basename='produto-loja')
+router.register(r'imagens-3d', Imagem3DViewSet, basename='imagem-3d')
+router.register(r'manuais', ManualsBaseViewSet, basename='manual')
+
 
 # Rotas de autenticação
 auth_urls = [
@@ -30,6 +36,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include(router.urls)),
     path('api/auth/', include(auth_urls)),
+    path('api/subscription/', include('clientes.subscription_urls')),
 ]
 
 if settings.DEBUG:

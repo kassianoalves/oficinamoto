@@ -5,6 +5,12 @@
       <p>Sistema completo para gerenciar clientes, motos e manutenções</p>
     </div>
 
+    <!-- Badge do Plano
+    <div class="plan-badge" :class="{ 'plan-pro': userPlan === 'pro' }">
+      <span v-if="userPlan === 'pro'">⭐ Plano PRO Ativo</span>
+      <span v-else>📦 Plano Gratuito - <router-link to="/planos" class="upgrade-link">Fazer Upgrade</router-link></span>
+    </div> -->
+
     <div class="stats-grid">
       <div class="stat-card">
         <h3>{{ totalClientes }}</h3>
@@ -78,6 +84,22 @@ export default {
     const agendamentosProximos = ref(0)
     const showFila = ref(false)
     const filaAtendimento = ref([])
+    const userPlan = ref('free')
+
+    const carregarPlanDoUsuario = async () => {
+      try {
+        const res = await api.get('/subscription/subscription/')
+        console.log('🏠 HomeView - Resposta da API:', res.data)
+        // A API retorna paginação: {results: [{...}]}
+        const subscription = res.data.results ? res.data.results[0] : (Array.isArray(res.data) ? res.data[0] : res.data)
+        console.log('🏠 HomeView - Subscrição:', subscription)
+        console.log('🏠 HomeView - Plan name:', subscription?.plan_name)
+        userPlan.value = subscription?.plan_name || 'free'
+        console.log('🏠 HomeView - userPlan definido como:', userPlan.value)
+      } catch (err) {
+        console.error('❌ HomeView - Erro ao carregar plano:', err)
+      }
+    }
 
     const getTipoServico = (tipo) => {
       const tipos = {
@@ -168,6 +190,9 @@ export default {
 
         // Carregar fila ao inicializar
         carregarFila()
+        
+        // Carregar plano do usuário
+        carregarPlanDoUsuario()
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
       }
@@ -179,6 +204,7 @@ export default {
       agendamentosProximos,
       showFila,
       filaAtendimento,
+      userPlan,
       abrirFila,
       fecharFila
     }
@@ -210,6 +236,39 @@ export default {
 .hero p {
   font-size: 1.2rem;
   opacity: 0.9;
+}
+
+.plan-badge {
+  background: #f0f0f0;
+  padding: 1rem 2rem;
+  border-radius: 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 1.1rem;
+  color: #666;
+  border: 2px solid #ddd;
+}
+
+.plan-badge.plan-pro {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #000;
+  border-color: #FFD700;
+  animation: pulse-border 2s infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% { border-color: #FFD700; }
+  50% { border-color: #FFA500; }
+}
+
+.upgrade-link {
+  color: #667eea;
+  text-decoration: underline;
+  font-weight: bold;
+}
+
+.upgrade-link:hover {
+  color: #764ba2;
 }
 
 .stats-grid {

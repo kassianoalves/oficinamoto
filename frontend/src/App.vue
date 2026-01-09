@@ -8,11 +8,16 @@
         <li v-if="isAuthenticated"><router-link to="/">🏠 Home</router-link></li>
         <li v-if="isAuthenticated"><router-link to="/clientes">👥 Clientes</router-link></li>
         <li v-if="isAuthenticated"><router-link to="/manutencoes">🔧 Agendamento</router-link></li>
+        <li v-if="isAuthenticated && isPro"><router-link to="/fornecedores">🏭 Fornecedores</router-link></li>
+        <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/loja">🛍️ Loja</router-link></li>
+        <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/imagens-3d">🎨 3D</router-link></li>
+        <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/manuais">📚 Manuais</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/planos">💎 Planos</router-link></li>
         <li v-if="!isAuthenticated"><router-link to="/login">🔐 Login</router-link></li>
         <li v-if="!isAuthenticated"><router-link to="/register">📝 Cadastrar</router-link></li>
         <li v-if="isAuthenticated" class="user-menu">
           <button @click="openProfileModal" class="btn-user-profile">
-            👤 {{ displayName }}
+            👤 {{ displayName }} <span v-if="isPro" class="badge-pro">⭐ PRO</span><span v-if="isEnterprise" class="badge-enterprise">👑 ENTERPRISE</span>
           </button>
           <button @click="logout" class="btn-logout">🚪 Sair</button>
         </li>
@@ -34,6 +39,7 @@
 <script>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import api from '@/api.js'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ProfileModal from '@/components/ProfileModal.vue'
 
@@ -49,6 +55,9 @@ export default {
     const username = ref('')
     const showProfile = ref(false)
     const userData = ref({})
+    const userSubscription = ref(null)
+    const isPro = ref(false)
+    const isEnterprise = ref(false)
 
     const displayName = computed(() => {
       if (userData.value.first_name && userData.value.last_name) {
@@ -57,7 +66,7 @@ export default {
       return username.value
     })
 
-    const checkAuth = () => {
+    const checkAuth = async () => {
       const token = localStorage.getItem('authToken')
       const user = localStorage.getItem('user')
       
@@ -67,9 +76,34 @@ export default {
         try {
           userData.value = JSON.parse(user)
           username.value = userData.value.username || userData.value.email
+          
+          // Carregar subscrição do usuário
+          if (token) {
+            await carregarSubscricao()
+          }
         } catch (e) {
           username.value = ''
         }
+      }
+    }
+
+    const carregarSubscricao = async () => {
+      try {
+        const res = await api.get('/subscription/subscription/')
+        console.log('📦 Resposta da API:', res.data)
+        // A API retorna paginação: {results: [{...}]}
+        const subscription = res.data.results ? res.data.results[0] : (Array.isArray(res.data) ? res.data[0] : res.data)
+        console.log('📋 Subscrição processada:', subscription)
+        console.log('💎 Nome do plano:', subscription?.plan_name)
+        userSubscription.value = subscription
+        isPro.value = subscription?.plan_name === 'pro'
+        isEnterprise.value = subscription?.plan_name === 'enterprise'
+        console.log('✅ isPro definido como:', isPro.value)
+        console.log('👑 isEnterprise definido como:', isEnterprise.value)
+      } catch (err) {
+        console.error('❌ Erro ao carregar subscrição:', err)
+        isPro.value = false
+        isEnterprise.value = false
       }
     }
 
@@ -103,6 +137,9 @@ export default {
       username,
       displayName,
       userData,
+      userSubscription,
+      isPro,
+      isEnterprise,
       showProfile,
       checkAuth,
       openProfileModal,
@@ -165,7 +202,7 @@ body {
 
 .nav-menu a:hover,
 .nav-menu a.router-link-active {
-  background: rgba(255, 255, 255, 0.2);
+  background-color: #903dc7;
 }
 
 .user-menu {
@@ -175,7 +212,7 @@ body {
 }
 
 .btn-user-profile {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(195, 123, 236, 0.15);
   border: 2px solid rgba(255, 255, 255, 0.3);
   color: white;
   padding: 0.6rem 1rem;
@@ -184,11 +221,44 @@ body {
   font-weight: 600;
   transition: all 0.3s ease;
   font-size: 1.05rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge-pro {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #000;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  animation: pulse 2s infinite;
+}
+
+.badge-enterprise {
+  background: linear-gradient(135deg, #FF1493, #FF69B4);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: bold;
+  animation: pulse-enterprise 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+@keyframes pulse-enterprise {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.1); opacity: 0.8; }
 }
 
 .btn-user-profile:hover {
   background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(255, 255, 255, 0.5);
+  border-color: rgba(183, 0, 255, 0.5);
   transform: translateY(-2px);
 }
 

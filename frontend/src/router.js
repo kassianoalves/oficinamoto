@@ -5,6 +5,11 @@ import ManutencaoView from '@/views/ManutencaoView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import PlansView from '@/views/PlansView.vue'
+import FornecedoresView from '@/views/FornecedoresView.vue'
+import LojaView from '@/views/LojaView.vue'
+import Imagens3DView from '@/views/Imagens3DView.vue'
+import ManuaisView from '@/views/ManuaisView.vue'
 
 const routes = [
   {
@@ -41,6 +46,36 @@ const routes = [
     path: '/manutencoes',
     name: 'Agendamento',
     component: ManutencaoView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/planos',
+    name: 'Planos',
+    component: PlansView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/fornecedores',
+    name: 'Fornecedores',
+    component: FornecedoresView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/loja',
+    name: 'Loja',
+    component: LojaView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/imagens-3d',
+    name: 'Imagens3D',
+    component: Imagens3DView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/manuais',
+    name: 'Manuais',
+    component: ManuaisView,
     meta: { requiresAuth: true }
   }
 ]

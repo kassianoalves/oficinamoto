@@ -1,4 +1,4 @@
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -17,6 +17,23 @@ class MotoViewSet(viewsets.ModelViewSet):
         if cliente_id:
             return Moto.objects.filter(cliente_id=cliente_id)
         return Moto.objects.all()
+
+    def create(self, request, *args, **kwargs):
+        """Verifica limites antes de criar moto"""
+        # Verificar se o usuário pode criar mais motos
+        user_subscription = getattr(request.user, 'subscription', None)
+        if user_subscription and user_subscription.plan:
+            total_motos = Moto.objects.count()
+            if total_motos >= user_subscription.plan.max_motos:
+                return Response(
+                    {
+                        'error': f'Limite de {user_subscription.plan.max_motos} motos atingido!',
+                        'detail': 'Faça upgrade para o plano PRO para ter motos ilimitadas.'
+                    },
+                    status=status.HTTP_403_FORBIDDEN
+                )
+        
+        return super().create(request, *args, **kwargs)
 
     def get_permissions(self):
         """Apenas admin pode criar, editar ou deletar"""
