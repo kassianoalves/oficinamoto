@@ -2,12 +2,11 @@
   <div class="auth-container">
     <div class="auth-box">
       <div class="auth-header">
-        <h1>🏍️ Oficina Moto</h1>
-        <p>Criar Nova Conta</p>
+        <h1>Moto Express</h1>
       </div>
 
       <div class="auth-form">
-        <h2>Registro</h2>
+        <h2>Crie sua Conta</h2>
         
         <form @submit.prevent="register">
           <div class="form-group">
@@ -16,7 +15,7 @@
               v-model="form.username" 
               type="text" 
               id="username" 
-              placeholder="seu_usuario"
+              placeholder="usuario de acesso"
               required
             >
           </div>

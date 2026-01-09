@@ -2,7 +2,7 @@
   <div class="auth-container">
     <div class="auth-box">
       <div class="auth-header">
-        <h1>🏍️ Moto Express</h1>
+        <h1>Moto Express</h1>
       </div>
       <div class="auth-form">
 
@@ -121,6 +121,7 @@ export default {
   min-height: 100vh;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 1rem;
 }
 
 .auth-box {
@@ -128,8 +129,8 @@ export default {
   border-radius: 12px;
   box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
   width: 100%;
-  max-width: 400px;
-  padding: 2rem;
+  max-width: 380px;
+  padding: 1.8rem 1.5rem;
   animation: slideIn 0.3s ease-out;
 }
 
@@ -146,11 +147,11 @@ export default {
 
 .auth-header {
   text-align: center;
-  margin-bottom: 2rem;
+  margin-bottom: 1.5rem;
 }
 
 .auth-header h1 {
-  font-size: 2rem;
+  font-size: 1.8rem;
   color: #667eea;
   margin: 0;
 }
@@ -161,14 +162,14 @@ export default {
 }
 
 .auth-form h2 {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   color: #333;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
   text-align: center;
 }
 
 .form-group {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.2rem;
 }
 
 .form-group label {
@@ -176,14 +177,15 @@ export default {
   margin-bottom: 0.5rem;
   color: #333;
   font-weight: 600;
+  font-size: 0.95rem;
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.65rem;
   border: 1px solid #ddd;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-family: inherit;
   transition: border-color 0.3s;
 }
@@ -196,12 +198,12 @@ export default {
 
 .btn-submit {
   width: 100%;
-  padding: 0.75rem;
+  padding: 0.65rem;
   background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   border-radius: 6px;
-  font-size: 1rem;
+  font-size: 0.95rem;
   font-weight: 600;
   cursor: pointer;
   transition: transform 0.2s, box-shadow 0.2s;
@@ -225,6 +227,7 @@ export default {
   margin: 1rem 0;
   text-align: center;
   font-weight: 500;
+  font-size: 0.9rem;
 }
 
 .auth-links {
@@ -250,13 +253,89 @@ export default {
   color: #ddd;
 }
 
-@media (max-width: 600px) {
+/* Responsivo para Tablets */
+@media (max-width: 768px) {
+  .auth-container {
+    padding: 1.5rem;
+  }
+
   .auth-box {
-    margin: 1rem;
+    max-width: 450px;
+    padding: 2rem 1.5rem;
+  }
+
+  .auth-header h1 {
+    font-size: 1.8rem;
+  }
+
+  .auth-form h2 {
+    font-size: 1.3rem;
+  }
+}
+
+/* Responsivo para Smartphones */
+@media (max-width: 480px) {
+  .auth-container {
+    padding: 1rem;
+    align-items: flex-start;
+    padding-top: 2rem;
+  }
+
+  .auth-box {
+    max-width: 100%;
+    padding: 1.5rem;
+    border-radius: 8px;
+  }
+
+  .auth-header {
+    margin-bottom: 1.5rem;
   }
 
   .auth-header h1 {
     font-size: 1.5rem;
+  }
+
+  .auth-form h2 {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+  }
+
+  .form-group {
+    margin-bottom: 1rem;
+  }
+
+  .form-group label {
+    font-size: 0.9rem;
+  }
+
+  .form-group input {
+    padding: 0.65rem;
+    font-size: 0.95rem;
+  }
+
+  .btn-submit {
+    padding: 0.65rem;
+    font-size: 0.95rem;
+  }
+
+  .auth-links {
+    margin-top: 1rem;
+    font-size: 0.85rem;
+  }
+}
+
+/* Smartphones pequenos */
+@media (max-width: 360px) {
+  .auth-box {
+    padding: 1rem;
+  }
+
+  .auth-header h1 {
+    font-size: 1.3rem;
+  }
+
+  .auth-form h2 {
+    font-size: 1.1rem;
   }
 }
 </style>

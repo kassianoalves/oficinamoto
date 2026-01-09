@@ -5,16 +5,16 @@
         <h1>Moto Express</h1>
       </div>
       <ul class="nav-menu">
-        <li v-if="isAuthenticated"><router-link to="/">Home</router-link></li>
-        <li v-if="isAuthenticated"><router-link to="/clientes">Clientes</router-link></li>
-        <li v-if="isAuthenticated"><router-link to="/manutencoes">Agendamento</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/">🏠 Home</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/clientes">👥 Clientes</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/manutencoes">🔧 Agendamento</router-link></li>
         <li v-if="!isAuthenticated"><router-link to="/login">🔐 Login</router-link></li>
         <li v-if="!isAuthenticated"><router-link to="/register">📝 Cadastrar</router-link></li>
         <li v-if="isAuthenticated" class="user-menu">
           <button @click="openProfileModal" class="btn-user-profile">
             👤 {{ displayName }}
           </button>
-          <button @click="logout" class="btn-logout">Sair</button>
+          <button @click="logout" class="btn-logout">🚪 Sair</button>
         </li>
       </ul>
     </nav>
@@ -149,7 +149,7 @@ body {
 .nav-menu {
   display: flex;
   list-style: none;
-  gap: 2rem;
+  gap: 1rem;
   align-items: center;
 }
 
@@ -157,6 +157,7 @@ body {
   color: white;
   text-decoration: none;
   font-weight: 500;
+  font-size: 1.05rem;
   padding: 0.5rem 1rem;
   border-radius: 4px;
   transition: background 0.3s;
@@ -182,7 +183,7 @@ body {
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
-  font-size: 0.95rem;
+  font-size: 1.05rem;
 }
 
 .btn-user-profile:hover {
@@ -199,6 +200,7 @@ body {
   border-radius: 4px;
   cursor: pointer;
   font-weight: 500;
+  font-size: 1.05rem;
   transition: background 0.3s;
 }
 .btn-logout:hover {
