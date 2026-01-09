@@ -5,21 +5,78 @@
         <h1>🏍️ Oficina Moto</h1>
       </div>
       <ul class="nav-menu">
-        <li><router-link to="/">Home</router-link></li>
-        <li><router-link to="/clientes">Clientes</router-link></li>
-        <li><router-link to="/motos">Motos</router-link></li>
-        <li><router-link to="/manutencoes">Manutenções</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/">Home</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/clientes">Clientes</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/motos">Motos</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/manutencoes">Manutenções</router-link></li>
+        <li v-if="!isAuthenticated"><router-link to="/login">🔐 Login</router-link></li>
+        <li v-if="!isAuthenticated"><router-link to="/register">📝 Cadastrar</router-link></li>
+        <li v-if="isAuthenticated" class="user-menu">
+          <span>👤 {{ username }}</span>
+          <button @click="logout" class="btn-logout">Sair</button>
+        </li>
       </ul>
     </nav>
     <main class="main-content">
-      <router-view />
+      <router-view @login="checkAuth" />
     </main>
+    <ToastNotification />
   </div>
 </template>
 
 <script>
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import ToastNotification from '@/components/ToastNotification.vue'
+
 export default {
-  name: 'App'
+  name: 'App',
+  components: {
+    ToastNotification
+  },
+  setup() {
+    const router = useRouter()
+    const isAuthenticated = ref(false)
+    const username = ref('')
+
+    const checkAuth = () => {
+      const token = localStorage.getItem('authToken')
+      const user = localStorage.getItem('user')
+      
+      isAuthenticated.value = !!token
+      
+      if (user) {
+        try {
+          const userData = JSON.parse(user)
+          username.value = userData.username || userData.email
+        } catch (e) {
+          username.value = ''
+        }
+      }
+    }
+
+    const logout = () => {
+      localStorage.removeItem('authToken')
+      localStorage.removeItem('user')
+      isAuthenticated.value = false
+      username.value = ''
+      router.push('/login')
+    }
+
+    onMounted(() => {
+      checkAuth()
+      // Verificar autenticação a cada mudança de rota
+      router.afterEach(() => {
+        checkAuth()
+      })
+    })
+
+    return {
+      isAuthenticated,
+      username,
+      logout
+    }
+  }
 }
 </script>
 
@@ -60,6 +117,7 @@ body {
   display: flex;
   list-style: none;
   gap: 2rem;
+  align-items: center;
 }
 
 .nav-menu a {
@@ -74,6 +132,31 @@ body {
 .nav-menu a:hover,
 .nav-menu a.router-link-active {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.user-menu {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.user-menu span {
+  font-weight: 500;
+}
+
+.btn-logout {
+  background: rgba(255, 255, 255, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.3s;
+}
+
+.btn-logout:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
 .main-content {

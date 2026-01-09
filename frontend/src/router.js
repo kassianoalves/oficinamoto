@@ -3,33 +3,71 @@ import HomeView from '@/views/HomeView.vue'
 import ClientesView from '@/views/ClientesView.vue'
 import MotosView from '@/views/MotosView.vue'
 import ManutencaoView from '@/views/ManutencaoView.vue'
+import LoginView from '@/views/LoginView.vue'
+import RegisterView from '@/views/RegisterView.vue'
+import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 
 const routes = [
   {
     path: '/',
     name: 'Home',
-    component: HomeView
+    component: HomeView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginView,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterView,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/forgot-password',
+    name: 'ForgotPassword',
+    component: ForgotPasswordView,
+    meta: { requiresAuth: false }
   },
   {
     path: '/clientes',
     name: 'Clientes',
-    component: ClientesView
+    component: ClientesView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/motos',
     name: 'Motos',
-    component: MotosView
+    component: MotosView,
+    meta: { requiresAuth: true }
   },
   {
     path: '/manutencoes',
     name: 'Manutenções',
-    component: ManutencaoView
+    component: ManutencaoView,
+    meta: { requiresAuth: true }
   }
 ]
 
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// Guard de autenticação
+router.beforeEach((to, from, next) => {
+  const isAuthenticated = !!localStorage.getItem('authToken')
+  
+  if (to.meta.requiresAuth && !isAuthenticated) {
+    next('/login')
+  } else if (!to.meta.requiresAuth && isAuthenticated && (to.name === 'Login' || to.name === 'Register')) {
+    next('/')
+  } else {
+    next()
+  }
 })
 
 export default router

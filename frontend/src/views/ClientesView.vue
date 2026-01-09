@@ -1,8 +1,16 @@
 <template>
   <div class="clientes-view">
     <div class="view-header">
-      <h2>Clientes</h2>
-      <button @click="showForm = !showForm" class="btn-add">➕ Novo Cliente</button>
+      <h2>Clientes ({{ clientesFiltrados.length }})</h2>
+      <div class="header-actions">
+        <input 
+          v-model="filtro" 
+          type="text" 
+          placeholder="🔍 Buscar por nome, CPF ou telefone..." 
+          class="search-input"
+        >
+        <button @click="showForm = !showForm" class="btn-add">➕ Novo Cliente</button>
+      </div>
     </div>
 
     <!-- Formulário de Adição -->
@@ -10,10 +18,24 @@
       <form @submit.prevent="salvarCliente">
         <h3>{{ editingId ? 'Editar Cliente' : 'Novo Cliente' }}</h3>
         <div class="form-grid">
-          <input v-model="form.nome" type="text" placeholder="Nome completo" required>
-          <input v-model="form.cpf" type="text" placeholder="CPF" required>
-          <input v-model="form.email" type="email" placeholder="Email">
-          <input v-model="form.telefone" type="tel" placeholder="Telefone" required>
+          <input v-model="form.nome" type="text" placeholder="Nome completo" required minlength="3">
+          <input 
+            v-model="form.cpf" 
+            type="text" 
+            placeholder="CPF (000.000.000-00)" 
+            required 
+            maxlength="14"
+            @input="formatCPF"
+          >
+          <input v-model="form.email" type="email" placeholder="Email" pattern="[^@]+@[^@]+\.[a-zA-Z]{2,}">
+          <input 
+            v-model="form.telefone" 
+            type="tel" 
+            placeholder="Telefone (00) 00000-0000" 
+            required
+            maxlength="15"
+            @input="formatTelefone"
+          >
           <input v-model="form.endereco" type="text" placeholder="Endereço" required>
           <input v-model="form.cidade" type="text" placeholder="Cidade" required>
         </div>
@@ -25,8 +47,8 @@
     </div>
 
     <!-- Lista de Clientes -->
-    <div v-if="clientes.length" class="clientes-list">
-      <div v-for="cliente in clientes" :key="cliente.id" class="cliente-card">
+    <div v-if="clientesFiltrados.length" class="clientes-list">
+      <div v-for="cliente in clientesFiltrados" :key="cliente.id" class="cliente-card">
         <div class="cliente-info">
           <h4>{{ cliente.nome }}</h4>
           <p><strong>CPF:</strong> {{ cliente.cpf }}</p>
@@ -48,15 +70,18 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api.js'
+import { useToast } from '@/composables/useToast'
 
 export default {
   name: 'ClientesView',
   setup() {
+    const { success, error } = useToast()
     const clientes = ref([])
     const showForm = ref(false)
     const editingId = ref(null)
+    const filtro = ref('')
     const form = ref({
       nome: '',
       cpf: '',
@@ -66,40 +91,69 @@ export default {
       cidade: ''
     })
 
+    const clientesFiltrados = computed(() => {
+      if (!filtro.value) return clientes.value
+      const termo = filtro.value.toLowerCase()
+      return clientes.value.filter(c => 
+        c.nome.toLowerCase().includes(termo) ||
+        c.cpf.replace(/\D/g, '').includes(termo.replace(/\D/g, '')) ||
+        c.telefone.replace(/\D/g, '').includes(termo.replace(/\D/g, ''))
+      )
+    })
+
+    const formatCPF = (event) => {
+      let value = event.target.value.replace(/\D/g, '')
+      if (value.length > 11) value = value.slice(0, 11)
+      if (value.length > 9) {
+        value = value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4')
+      } else if (value.length > 6) {
+        value = value.replace(/(\d{3})(\d{3})(\d{1,3})/, '$1.$2.$3')
+      } else if (value.length > 3) {
+        value = value.replace(/(\d{3})(\d{1,3})/, '$1.$2')
+      }
+      form.value.cpf = value
+    }
+
+    const formatTelefone = (event) => {
+      let value = event.target.value.replace(/\D/g, '')
+      if (value.length > 11) value = value.slice(0, 11)
+      if (value.length > 10) {
+        value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+      } else if (value.length > 6) {
+        value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
+      } else if (value.length > 2) {
+        value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2')
+      }
+      form.value.telefone = value
+    }
+
     const carregarClientes = async () => {
       try {
-        console.log('Carregando clientes...')
         const res = await api.get('/clientes/')
-        console.log('Resposta recebida:', res.data)
         clientes.value = res.data.results || res.data || []
-        console.log('Clientes carregados:', clientes.value)
-      } catch (error) {
-        console.error('Erro ao carregar clientes:', error.message)
-        console.error('Erro completo:', error)
-        alert('Erro ao carregar clientes: ' + error.message)
+      } catch (err) {
+        console.error('Erro ao carregar clientes:', err)
+        error('Erro ao carregar clientes. Verifique sua conexão.')
       }
     }
 
     const salvarCliente = async () => {
       try {
-        console.log('Salvando cliente:', form.value)
         if (editingId.value) {
-          const res = await api.put(`/clientes/${editingId.value}/`, form.value)
-          console.log('Cliente atualizado:', res.data)
-          alert('Cliente atualizado com sucesso!')
+          await api.put(`/clientes/${editingId.value}/`, form.value)
+          success('Cliente atualizado com sucesso!')
         } else {
-          const res = await api.post('/clientes/', form.value)
-          console.log('Cliente criado:', res.data)
-          alert('Cliente salvo com sucesso!')
+          await api.post('/clientes/', form.value)
+          success('Cliente cadastrado com sucesso!')
         }
         resetForm()
         carregarClientes()
-      } catch (error) {
-        console.error('Erro ao salvar cliente:', error.message)
-        console.error('Status:', error.response?.status)
-        console.error('Dados:', error.response?.data)
-        const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || error.message || 'Erro ao salvar cliente'
-        alert('Erro: ' + errorMsg)
+      } catch (err) {
+        console.error('Erro ao salvar cliente:', err)
+        const errorMsg = err.response?.data?.cpf?.[0] || 
+                        err.response?.data?.detail || 
+                        'Erro ao salvar cliente'
+        error(errorMsg)
       }
     }
 
@@ -113,9 +167,11 @@ export default {
       if (confirm('Deseja deletar este cliente?')) {
         try {
           await api.delete(`/clientes/${id}/`)
+          success('Cliente deletado com sucesso!')
           carregarClientes()
-        } catch (error) {
-          console.error('Erro ao deletar cliente:', error)
+        } catch (err) {
+          console.error('Erro ao deletar cliente:', err)
+          error('Erro ao deletar cliente. Verifique as permissões.')
         }
       }
     }
@@ -137,13 +193,17 @@ export default {
 
     return {
       clientes,
+      clientesFiltrados,
       showForm,
       editingId,
       form,
+      filtro,
       salvarCliente,
       editarCliente,
       deletarCliente,
-      resetForm
+      resetForm,
+      formatCPF,
+      formatTelefone
     }
   }
 }
@@ -161,11 +221,34 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .view-header h2 {
   font-size: 1.8rem;
   color: #333;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.search-input {
+  padding: 0.8rem 1.2rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  min-width: 300px;
+  transition: all 0.3s;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .btn-add {

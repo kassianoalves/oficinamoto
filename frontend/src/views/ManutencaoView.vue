@@ -1,8 +1,16 @@
 <template>
   <div class="manutencao-view">
     <div class="view-header">
-      <h2>Manutenções e Agendamentos</h2>
-      <button @click="showForm = !showForm" class="btn-add">➕ Novo Agendamento</button>
+      <h2>Manutenções e Agendamentos ({{ agendamentosFiltrados.length }})</h2>
+      <div class="header-actions">
+        <select v-model="filtroStatus" class="filter-select">
+          <option value="">Todos os Status</option>
+          <option value="pendente">Pendente</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+        <button @click="showForm = !showForm" class="btn-add">➕ Novo Agendamento</button>
+      </div>
     </div>
 
     <!-- Formulário de Adição -->
@@ -41,8 +49,8 @@
     </div>
 
     <!-- Lista de Agendamentos -->
-    <div v-if="agendamentos.length" class="agendamentos-list">
-      <div v-for="agendamento in agendamentos" :key="agendamento.id" class="agendamento-card" :class="getStatusClass(agendamento.status)">
+    <div v-if="agendamentosFiltrados.length" class="agendamentos-list">
+      <div v-for="agendamento in agendamentosFiltrados" :key="agendamento.id" class="agendamento-card" :class="getStatusClass(agendamento.status)">
         <div class="agendamento-info">
           <h4>{{ getMotoDados(agendamento.moto) }}</h4>
           <p><strong>Tipo:</strong> {{ getTipoServico(agendamento.tipo_servico) }}</p>
@@ -64,16 +72,19 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import api from '@/api.js'
+import { useToast } from '@/composables/useToast'
 
 export default {
   name: 'ManutencaoView',
   setup() {
+    const { success, error } = useToast()
     const agendamentos = ref([])
     const motos = ref([])
     const showForm = ref(false)
     const editingId = ref(null)
+    const filtroStatus = ref('')
     const form = ref({
       moto: '',
       tipo_servico: 'manutencao',
@@ -82,13 +93,18 @@ export default {
       status: 'pendente'
     })
 
+    const agendamentosFiltrados = computed(() => {
+      if (!filtroStatus.value) return agendamentos.value
+      return agendamentos.value.filter(a => a.status === filtroStatus.value)
+    })
+
     const carregarAgendamentos = async () => {
       try {
         const res = await api.get('/agendamentos/')
         agendamentos.value = res.data.results || res.data || []
-      } catch (error) {
-        console.error('Erro ao carregar agendamentos:', error)
-        alert('Erro ao carregar agendamentos')
+      } catch (err) {
+        console.error('Erro ao carregar agendamentos:', err)
+        error('Erro ao carregar agendamentos')
       }
     }
 
@@ -96,9 +112,9 @@ export default {
       try {
         const res = await api.get('/motos/')
         motos.value = res.data.results || res.data || []
-      } catch (error) {
-        console.error('Erro ao carregar motos:', error)
-        alert('Erro ao carregar motos')
+      } catch (err) {
+        console.error('Erro ao carregar motos:', err)
+        error('Erro ao carregar motos')
       }
     }
 
@@ -131,17 +147,19 @@ export default {
       try {
         if (editingId.value) {
           await api.put(`/agendamentos/${editingId.value}/`, form.value)
-          alert('Agendamento atualizado com sucesso!')
+          success('Agendamento atualizado com sucesso!')
         } else {
           await api.post('/agendamentos/', form.value)
-          alert('Agendamento salvo com sucesso!')
+          success('Agendamento criado com sucesso!')
         }
         resetForm()
         carregarAgendamentos()
-      } catch (error) {
-        console.error('Erro ao salvar agendamento:', error)
-        const errorMsg = error.response?.data?.detail || error.response?.data?.non_field_errors?.[0] || 'Erro ao salvar agendamento'
-        alert(errorMsg)
+      } catch (err) {
+        console.error('Erro ao salvar agendamento:', err)
+        const errorMsg = err.response?.data?.detail || 
+                        err.response?.data?.non_field_errors?.[0] || 
+                        'Erro ao salvar agendamento'
+        error(errorMsg)
       }
     }
 
@@ -155,9 +173,11 @@ export default {
       if (confirm('Deseja deletar este agendamento?')) {
         try {
           await api.delete(`/agendamentos/${id}/`)
+          success('Agendamento deletado com sucesso!')
           carregarAgendamentos()
-        } catch (error) {
-          console.error('Erro ao deletar agendamento:', error)
+        } catch (err) {
+          console.error('Erro ao deletar agendamento:', err)
+          error('Erro ao deletar agendamento. Verifique as permissões.')
         }
       }
     }
@@ -181,10 +201,12 @@ export default {
 
     return {
       agendamentos,
+      agendamentosFiltrados,
       motos,
       showForm,
       editingId,
       form,
+      filtroStatus,
       salvarAgendamento,
       editarAgendamento,
       deletarAgendamento,
@@ -210,11 +232,36 @@ export default {
   justify-content: space-between;
   align-items: center;
   margin-bottom: 1rem;
+  flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .view-header h2 {
   font-size: 1.8rem;
   color: #333;
+}
+
+.header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.filter-select {
+  padding: 0.8rem 1.2rem;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  font-size: 1rem;
+  min-width: 200px;
+  transition: all 0.3s;
+  background: white;
+  cursor: pointer;
+}
+
+.filter-select:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .btn-add {

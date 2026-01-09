@@ -1,0 +1,26 @@
+# Serviço Systemd para Oficina Moto Backend (Gunicorn)
+# Coloque este arquivo em /etc/systemd/system/oficinamoto.service
+
+[Unit]
+Description=Oficina Moto Gunicorn Daemon
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/oficinamoto/backend
+Environment="PATH=/var/www/oficinamoto/.venv/bin"
+Environment="DJANGO_SETTINGS_MODULE=oficinamoto_api.settings_prod"
+ExecStart=/var/www/oficinamoto/.venv/bin/gunicorn \
+          --workers 3 \
+          --bind 127.0.0.1:8000 \
+          --timeout 60 \
+          --access-logfile /var/log/oficinamoto/access.log \
+          --error-logfile /var/log/oficinamoto/error.log \
+          oficinamoto_api.wsgi:application
+
+Restart=on-failure
+RestartSec=5s
+
+[Install]
+WantedBy=multi-user.target
