@@ -155,10 +155,11 @@ class UserSerializer(serializers.ModelSerializer):
     idade = serializers.SerializerMethodField()
     telefone = serializers.SerializerMethodField()
     avatar = serializers.SerializerMethodField()
+    avatar_thumb = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'idade', 'telefone', 'avatar']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'idade', 'telefone', 'avatar', 'avatar_thumb']
     
     def get_idade(self, obj):
         try:
@@ -177,6 +178,18 @@ class UserSerializer(serializers.ModelSerializer):
             if obj.profile.avatar:
                 request = self.context.get('request')
                 url = obj.profile.avatar.url
+                if request is not None:
+                    return request.build_absolute_uri(url)
+                return url
+        except Exception:
+            return None
+        return None
+
+    def get_avatar_thumb(self, obj):
+        try:
+            if obj.profile.avatar_thumb:
+                request = self.context.get('request')
+                url = obj.profile.avatar_thumb.url
                 if request is not None:
                     return request.build_absolute_uri(url)
                 return url

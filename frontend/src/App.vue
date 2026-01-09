@@ -1,6 +1,6 @@
 <template>
   <div id="app" class="app-container">
-    <nav class="navbar">
+    <nav v-if="!isAuthPage" class="navbar">
       <div class="logo">
         <h1>🏍️ Moto Express</h1>
       </div>
@@ -43,8 +43,7 @@
           </template>
           <template v-else>
             <button @click="openProfileModal" class="btn-user-profile" :title="`Plano: ${getPlanName()}`">
-              <img v-if="userData.avatar" :src="userData.avatar" alt="Avatar" class="user-avatar" />
-              <span v-else class="user-avatar placeholder">👤</span>
+              <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" class="user-avatar" />
               {{ displayName }}
               <span v-if="isPro" class="badge badge-pro">PRO</span>
               <span v-if="isEnterprise" class="badge badge-enterprise">ENTERPRISE</span>
@@ -55,7 +54,7 @@
         </div>
       </div>
     </nav>
-    <main class="main-content">
+    <main :class="['main-content', { 'main-auth': isAuthPage }]">
       <router-view @login="checkAuth" />
     </main>
     <ProfileModal 
@@ -70,10 +69,11 @@
 
 <script>
 import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import api from '@/api.js'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ProfileModal from '@/components/ProfileModal.vue'
+import avatarPlaceholder from '@/assets/avatar-placeholder.svg'
 
 export default {
   name: 'App',
@@ -83,6 +83,7 @@ export default {
   },
   setup() {
     const router = useRouter()
+    const route = useRoute()
     const isAuthenticated = ref(false)
     const username = ref('')
     const showProfile = ref(false)
@@ -99,6 +100,40 @@ export default {
       }
       return username.value
     })
+
+    const isAuthPage = computed(() => {
+      const authPages = ['Login', 'Register', 'ForgotPassword']
+      return authPages.includes(route.name)
+    })
+
+    const withBust = (url) => {
+      if (!url) return url
+      const sep = url.includes('?') ? '&' : '?'
+      return `${url}${sep}v=${Date.now()}`
+    }
+
+    const makeInitialsAvatar = (name) => {
+      const initials = (name || '')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(s => s.charAt(0).toUpperCase())
+        .join('') || '?'
+      const svg = `
+        <svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'>
+          <defs>
+            <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+              <stop offset='0%' stop-color='#667eea'/>
+              <stop offset='100%' stop-color='#764ba2'/>
+            </linearGradient>
+          </defs>
+          <circle cx='32' cy='32' r='32' fill='url(#g)'/>
+          <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-family='Segoe UI, Arial' font-size='26' fill='#fff' font-weight='700'>${initials}</text>
+        </svg>`
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+    }
+
+    const avatarInitials = computed(() => makeInitialsAvatar(displayName.value || username.value))
 
     const getPlanName = () => {
       const planName = userSubscription.value?.plan_name
@@ -162,11 +197,21 @@ export default {
       }
     }
 
+    const currentPlan = computed(() => userSubscription.value?.plan_name || 'free')
+
+    const avatarBorderClass = computed(() => {
+      if (isEnterprise.value) return 'border-enterprise'
+      if (isPro.value) return 'border-pro'
+      return 'border-free'
+    })
+
     const openProfileModal = () => {
       showProfile.value = true
     }
 
     const handleProfileUpdate = (updatedUser) => {
+      if (updatedUser.avatar) updatedUser.avatar = withBust(updatedUser.avatar)
+      if (updatedUser.avatar_thumb) updatedUser.avatar_thumb = withBust(updatedUser.avatar_thumb)
       userData.value = updatedUser
       username.value = updatedUser.username || updatedUser.email
     }
@@ -207,6 +252,11 @@ export default {
       openDropdown,
       closeDropdown,
       toggleDropdown
+      ,avatarPlaceholder
+      ,avatarInitials
+      ,avatarBorderClass
+      ,currentPlan
+      ,isAuthPage
     }
   }
 }
@@ -252,6 +302,8 @@ body {
   justify-content: space-between;
   gap: 1.5rem;
   flex: 1;
+  position: relative;
+  z-index: 1;
 }
 
 .nav-menu {
@@ -262,6 +314,10 @@ body {
   margin: 0;
   padding: 0;
   flex-wrap: wrap;
+  flex: 1;
+  justify-content: center;
+  position: relative;
+  z-index: 1;
 }
 
 .nav-menu li {
@@ -304,6 +360,9 @@ body {
 .menu-plans {
   background: linear-gradient(135deg, rgba(255, 182, 193, 0.2), rgba(255, 192, 203, 0.2));
   border-left: 3px solid #FF69B4;
+}
+.menu-plans.inline {
+  margin-right: 0.5rem;
 }
 
 .menu-plans:hover {
@@ -392,6 +451,8 @@ body {
   gap: 0.75rem;
   flex-wrap: wrap;
   justify-content: flex-end;
+  position: relative;
+  z-index: 5;
 }
 
 .nav-btn {
@@ -517,6 +578,12 @@ body {
   max-width: 1400px;
   margin: 0 auto;
   width: 100%;
+}
+
+.main-auth {
+  padding: 0;
+  max-width: none;
+  margin: 0;
 }
 
 @media (max-width: 1024px) {

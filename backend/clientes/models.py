@@ -55,6 +55,7 @@ class UserProfile(models.Model):
     """Perfil do usuário com informações adicionais"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
     avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
+    avatar_thumb = models.ImageField(upload_to='avatars/thumbs/', blank=True, null=True)
     idade = models.IntegerField(null=True, blank=True)
     telefone = models.CharField(max_length=20, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -74,7 +75,8 @@ class UserProfile(models.Model):
         if self.avatar:
             try:
                 img = Image.open(self.avatar)
-                img_format = img.format if img.format in ['JPEG', 'PNG', 'WEBP'] else 'JPEG'
+                # Preferir salvar em WEBP para reduzir tamanho (fallback para JPEG)
+                save_format = 'WEBP'
                 # Converter para RGB se necessário
                 if img.mode in ("RGBA", "P"):
                     img = img.convert("RGB")
@@ -90,12 +92,32 @@ class UserProfile(models.Model):
                 img = img.resize((256, 256), Image.LANCZOS)
                 # Salvar em memória e substituir arquivo
                 buffer = BytesIO()
-                img.save(buffer, format=img_format, quality=85)
+                try:
+                    img.save(buffer, format=save_format, quality=85)
+                    ext_main = 'webp'
+                except Exception:
+                    # Fallback
+                    img.save(buffer, format='JPEG', quality=85)
+                    ext_main = 'jpg'
                 buffer.seek(0)
                 # Manter mesmo nome de arquivo
                 file_name = self.avatar.name.split('/')[-1]
-                self.avatar.save(file_name, ContentFile(buffer.read()), save=False)
-                super().save(update_fields=['avatar'])
+                base, _ext = file_name.rsplit('.', 1) if '.' in file_name else (file_name, 'jpg')
+                new_name = f"{base}.{ext_main}"
+                self.avatar.save(new_name, ContentFile(buffer.read()), save=False)
+                # Gerar thumbnail 64x64
+                thumb = img.copy().resize((64, 64), Image.LANCZOS)
+                tbuffer = BytesIO()
+                try:
+                    thumb.save(tbuffer, format=save_format, quality=85)
+                    ext_thumb = 'webp'
+                except Exception:
+                    thumb.save(tbuffer, format='JPEG', quality=85)
+                    ext_thumb = 'jpg'
+                tbuffer.seek(0)
+                thumb_name = f"{base}_thumb.{ext_thumb}"
+                self.avatar_thumb.save(thumb_name, ContentFile(tbuffer.read()), save=False)
+                super().save(update_fields=['avatar', 'avatar_thumb'])
             except Exception:
                 # Em caso de problema no processamento da imagem, mantém original
                 pass

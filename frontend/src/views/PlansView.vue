@@ -8,7 +8,7 @@
     <div class="plans-container">
       <!-- PLANO GRATUITO -->
       <div class="plan-card">
-        <div class="badge badge-free">BASICO</div>
+        <div class="badge badge-free">BÁSICO</div>
         <h2>GRATUITO</h2>
         <div class="price">
           <span>R$00.00</span>
@@ -180,9 +180,6 @@
             <span>✅ Loja de Produtos</span>
           </li>
           <li class="active">
-            <span>✅ Imagens 3D</span>
-          </li>
-          <li class="active">
             <span>✅ Base de Manuais</span>
           </li>
         </ul>
@@ -318,7 +315,7 @@ export default {
 .badge-free {
   position: absolute;
   top: -20px;
-  left: 50%;
+  left: 35%;
   transform: translateX(-50%);
   color: white;
   padding: 0.7rem 1.4rem;
@@ -362,7 +359,7 @@ export default {
 }
 
 .badge-free {
-  background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+  background: linear-gradient(135deg, #0025f8 0%, #00c9fc 100%);
 }
 
 .badge-pro {
@@ -370,7 +367,7 @@ export default {
 }
 
 .badge-enterprise {
-  background: linear-gradient(135deg, #FF1493 0%, #FF69B4 50%, #FFD700 100%);
+  background: linear-gradient(135deg, #da680b 0%, #faaa33 50%, #FFD700 100%);
   animation: pulse-badge 2s ease-in-out infinite;
 }
 
@@ -498,7 +495,7 @@ export default {
 }
 
 .btn-choose:hover {
-  background: #0aa396;
+  background: #5782f8;
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(255, 0, 255, 0.15);
 }
@@ -529,7 +526,7 @@ export default {
 
 
 .btn-current {
-  background: linear-gradient(135deg, #48bb78, #38a169);
+  background: linear-gradient(135deg, #0b1fd3, #1f89e0);
   color: white;
   cursor: not-allowed;
   opacity: 0.9;

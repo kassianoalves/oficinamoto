@@ -1,109 +1,113 @@
 <template>
-  <div v-if="showModal" class="modal-overlay" @click="closeModal">
-    <div class="modal" @click.stop>
-      <div class="modal-header">
-        <h2>Editar Perfil</h2>
-        <button @click="closeModal" class="close-btn">&times;</button>
-      </div>
+  <Teleport to="body">
+    <div v-if="showModal" class="modal-overlay" @click="closeModal">
+      <div class="modal" @click.stop>
+        <div class="modal-header">
+          <h2>Editar Perfil</h2>
+          <button @click="closeModal" class="close-btn">&times;</button>
+        </div>
 
-      <form @submit.prevent="updateProfile" class="modal-form">
-        <div class="modal-body">
-        <div class="avatar-section">
-          <div class="avatar-preview" :class="{ 'has-avatar': avatarPreview || userData.avatar }">
-            <img v-if="avatarPreview" :src="avatarPreview" alt="Preview avatar" />
-            <img v-else-if="userData.avatar" :src="userData.avatar" alt="Avatar" />
-            <div v-else class="avatar-placeholder">👤</div>
-          </div>
-          <div class="avatar-controls">
-            <label class="avatar-upload">
-              Trocar foto
-              <input type="file" accept="image/*" @change="onFileChange" />
-            </label>
-            <div class="avatar-hint">
-              <span>Máx. 3MB • Formatos: JPG/PNG/WEBP</span>
-              <span v-if="avatarInfo">Selecionado: {{ avatarInfo }}</span>
+        <form @submit.prevent="updateProfile" class="modal-form">
+          <div class="modal-body">
+          <div class="avatar-section">
+            <div class="avatar-preview" :class="{ 'has-avatar': avatarPreview || userData.avatar }">
+              <img :src="avatarPreview || userData.avatar || avatarInitials" alt="Avatar" />
             </div>
-            <div v-if="avatarError" class="avatar-error">{{ avatarError }}</div>
+            <div class="avatar-controls">
+              <label class="avatar-upload">
+                Trocar foto
+                <input type="file" accept="image/*" @change="onFileChange" />
+              </label>
+              <div class="avatar-hint">
+                <span>Máx. 3MB • Formatos: JPG/PNG/WEBP</span>
+                <span v-if="avatarInfo">Selecionado: {{ avatarInfo }}</span>
+              </div>
+              <div v-if="avatarError" class="avatar-error">{{ avatarError }}</div>
+            </div>
           </div>
-        </div>
 
-        <div class="form-group">
-          <label for="first_name">Nome</label>
-          <input
-            id="first_name"
-            v-model="form.first_name"
-            type="text"
-            placeholder="Seu nome"
-            maxlength="150"
-          />
-        </div>
+          <div class="form-group">
+            <label for="first_name">Nome</label>
+            <input
+              id="first_name"
+              v-model="form.first_name"
+              type="text"
+              placeholder="Seu nome"
+              maxlength="150"
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="last_name">Sobrenome</label>
-          <input
-            id="last_name"
-            v-model="form.last_name"
-            type="text"
-            placeholder="Seu sobrenome"
-            maxlength="150"
-          />
-        </div>
+          <div class="form-group">
+            <label for="last_name">Sobrenome</label>
+            <input
+              id="last_name"
+              v-model="form.last_name"
+              type="text"
+              placeholder="Seu sobrenome"
+              maxlength="150"
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="email">Email</label>
-          <input
-            id="email"
-            v-model="form.email"
-            type="email"
-            placeholder="seu.email@example.com"
-          />
-        </div>
+          <div class="form-group">
+            <label for="email">Email</label>
+            <input
+              id="email"
+              v-model="form.email"
+              type="email"
+              placeholder="seu.email@example.com"
+            />
+            <div v-if="fieldErrors.email" class="field-error">{{ fieldErrors.email }}</div>
+          </div>
 
-        <div class="form-group">
-          <label for="idade">Idade</label>
-          <input
-            id="idade"
-            v-model.number="form.idade"
-            type="number"
-            min="1"
-            max="150"
-            placeholder="Sua idade"
-          />
-        </div>
+          <div class="form-group">
+            <label for="idade">Idade</label>
+            <input
+              id="idade"
+              v-model.number="form.idade"
+              type="number"
+              min="1"
+              max="150"
+              placeholder="Sua idade"
+            />
+          </div>
 
-        <div class="form-group">
-          <label for="telefone">Telefone</label>
-          <input
-            id="telefone"
-            v-model="form.telefone"
-            type="tel"
-            placeholder="(11) 99999-9999"
-            maxlength="20"
-          />
-        </div>
+          <div class="form-group">
+            <label for="telefone">Telefone</label>
+            <input
+              id="telefone"
+              v-model="form.telefone"
+              @input="form.telefone = formatTelefone(form.telefone)"
+              type="tel"
+              placeholder="(11) 99999-9999"
+              maxlength="20"
+            />
+            <div v-if="fieldErrors.telefone" class="field-error">{{ fieldErrors.telefone }}</div>
+          </div>
 
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn-save" :disabled="loading || !!avatarError">
-            {{ loading ? 'Salvando...' : 'Salvar' }}
-          </button>
-          <button type="button" class="btn-cancel" @click="closeModal" :disabled="loading">
-            Cancelar
-          </button>
-        </div>
+          </div>
+          <div class="form-actions">
+            <button type="submit" class="btn-save" :disabled="loading || !!avatarError || !!fieldErrors.email || !!fieldErrors.telefone">
+              {{ loading ? 'Salvando...' : 'Salvar' }}
+            </button>
+            <button type="button" class="btn-cancel" @click="closeModal" :disabled="loading">
+              Cancelar
+            </button>
+          </div>
 
-        <div v-if="error" class="error-message">
-          {{ error }}
-        </div>
-      </form>
+          <div v-if="error" class="error-message">
+            {{ error }}
+          </div>
+        </form>
+      </div>
     </div>
-  </div>
+  </Teleport>
 </template>
 
 <script>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 import api from '@/api'
 import { useToast } from '@/composables/useToast'
+import avatarPlaceholder from '@/assets/avatar-placeholder.svg'
 
 export default {
   name: 'ProfileModal',
@@ -119,7 +123,7 @@ export default {
   },
   emits: ['close', 'update'],
   setup(props, { emit }) {
-    const showModal = ref(props.show)
+    const showModal = computed(() => props.show)
     const loading = ref(false)
     const error = ref('')
     const avatarFile = ref(null)
@@ -128,6 +132,8 @@ export default {
     const avatarInfo = ref('')
     const MAX_FILE_SIZE = 3 * 1024 * 1024
     const { showToast } = useToast()
+    const fieldErrors = ref({ email: '', telefone: '' })
+    const avatarInitials = ref('')
 
     const form = ref({
       first_name: props.userData.first_name || '',
@@ -137,10 +143,30 @@ export default {
       telefone: props.userData.telefone || ''
     })
 
+    const makeInitialsAvatar = (name) => {
+      const initials = (name || '')
+        .trim()
+        .split(/\s+/)
+        .slice(0, 2)
+        .map(s => s.charAt(0).toUpperCase())
+        .join('') || '?'
+      const svg = `
+        <svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 64 64'>
+          <defs>
+            <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
+              <stop offset='0%' stop-color='#667eea'/>
+              <stop offset='100%' stop-color='#764ba2'/>
+            </linearGradient>
+          </defs>
+          <circle cx='32' cy='32' r='32' fill='url(#g)'/>
+          <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-family='Segoe UI, Arial' font-size='22' fill='#fff' font-weight='700'>${initials}</text>
+        </svg>`
+      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
+    }
+
     watch(
       () => props.show,
       (newVal) => {
-        showModal.value = newVal
         if (newVal) {
           form.value = {
             first_name: props.userData.first_name || '',
@@ -151,18 +177,34 @@ export default {
           }
           avatarPreview.value = ''
           error.value = ''
+          const name = `${props.userData.first_name || ''} ${props.userData.last_name || ''}`.trim() || props.userData.username || props.userData.email || ''
+          avatarInitials.value = makeInitialsAvatar(name)
         }
-      }
+      },
+      { immediate: true }
     )
 
     const closeModal = () => {
-      showModal.value = false
       emit('close')
     }
 
     const updateProfile = async () => {
       loading.value = true
       error.value = ''
+      // Validações simples de campos
+      fieldErrors.value.email = ''
+      fieldErrors.value.telefone = ''
+      if (form.value.email && !/^\S+@\S+\.\S+$/.test(form.value.email)) {
+        fieldErrors.value.email = 'Email inválido'
+      }
+      const telDigits = (form.value.telefone || '').replace(/\D/g, '')
+      if (telDigits && !(telDigits.length === 10 || telDigits.length === 11)) {
+        fieldErrors.value.telefone = 'Telefone deve ter 10 ou 11 dígitos'
+      }
+      if (fieldErrors.value.email || fieldErrors.value.telefone || avatarError.value) {
+        loading.value = false
+        return
+      }
 
       try {
         // Usar FormData para enviar imagem + campos
@@ -178,10 +220,19 @@ export default {
           headers: { 'Content-Type': 'multipart/form-data' }
         })
         console.log('Resposta recebida:', response.data)
-        
-        localStorage.setItem('user', JSON.stringify(response.data))
+        // Cache bust nas URLs do avatar
+        const withBust = (url) => {
+          if (!url) return url
+          const sep = url.includes('?') ? '&' : '?'
+          return `${url}${sep}v=${Date.now()}`
+        }
+        const updated = { ...response.data }
+        if (updated.avatar) updated.avatar = withBust(updated.avatar)
+        if (updated.avatar_thumb) updated.avatar_thumb = withBust(updated.avatar_thumb)
+
+        localStorage.setItem('user', JSON.stringify(updated))
         showToast('Perfil atualizado com sucesso!', 'success')
-        emit('update', response.data)
+        emit('update', updated)
         closeModal()
       } catch (err) {
         console.error('Erro completo:', err)
@@ -291,10 +342,20 @@ export default {
       avatarPreview,
       avatarError,
       avatarInfo,
+      avatarInitials,
+      avatarPlaceholder,
+      fieldErrors,
       closeModal,
       updateProfile,
       onFileChange,
-      resizeImageToSquare
+      resizeImageToSquare,
+      formatTelefone: (val) => {
+        const digits = (val || '').replace(/\D/g, '')
+        if (digits.length <= 10) {
+          return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
+        }
+        return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+      }
     }
   }
 }
