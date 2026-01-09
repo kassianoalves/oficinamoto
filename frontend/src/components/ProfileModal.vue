@@ -7,6 +7,26 @@
       </div>
 
       <form @submit.prevent="updateProfile" class="modal-form">
+        <div class="modal-body">
+        <div class="avatar-section">
+          <div class="avatar-preview" :class="{ 'has-avatar': avatarPreview || userData.avatar }">
+            <img v-if="avatarPreview" :src="avatarPreview" alt="Preview avatar" />
+            <img v-else-if="userData.avatar" :src="userData.avatar" alt="Avatar" />
+            <div v-else class="avatar-placeholder">👤</div>
+          </div>
+          <div class="avatar-controls">
+            <label class="avatar-upload">
+              Trocar foto
+              <input type="file" accept="image/*" @change="onFileChange" />
+            </label>
+            <div class="avatar-hint">
+              <span>Máx. 3MB • Formatos: JPG/PNG/WEBP</span>
+              <span v-if="avatarInfo">Selecionado: {{ avatarInfo }}</span>
+            </div>
+            <div v-if="avatarError" class="avatar-error">{{ avatarError }}</div>
+          </div>
+        </div>
+
         <div class="form-group">
           <label for="first_name">Nome</label>
           <input
@@ -62,8 +82,9 @@
           />
         </div>
 
+        </div>
         <div class="form-actions">
-          <button type="submit" class="btn-save" :disabled="loading">
+          <button type="submit" class="btn-save" :disabled="loading || !!avatarError">
             {{ loading ? 'Salvando...' : 'Salvar' }}
           </button>
           <button type="button" class="btn-cancel" @click="closeModal" :disabled="loading">
@@ -101,6 +122,11 @@ export default {
     const showModal = ref(props.show)
     const loading = ref(false)
     const error = ref('')
+    const avatarFile = ref(null)
+    const avatarPreview = ref('')
+    const avatarError = ref('')
+    const avatarInfo = ref('')
+    const MAX_FILE_SIZE = 3 * 1024 * 1024
     const { showToast } = useToast()
 
     const form = ref({
@@ -123,6 +149,7 @@ export default {
             idade: props.userData.idade || null,
             telefone: props.userData.telefone || ''
           }
+          avatarPreview.value = ''
           error.value = ''
         }
       }
@@ -138,17 +165,18 @@ export default {
       error.value = ''
 
       try {
-        // Preparar dados para envio (remover campos vazios)
-        const dataToSend = {}
-        if (form.value.first_name) dataToSend.first_name = form.value.first_name
-        if (form.value.last_name) dataToSend.last_name = form.value.last_name
-        if (form.value.email) dataToSend.email = form.value.email
-        if (form.value.idade) dataToSend.idade = form.value.idade
-        if (form.value.telefone) dataToSend.telefone = form.value.telefone
+        // Usar FormData para enviar imagem + campos
+        const formData = new FormData()
+        if (form.value.first_name) formData.append('first_name', form.value.first_name)
+        if (form.value.last_name) formData.append('last_name', form.value.last_name)
+        if (form.value.email) formData.append('email', form.value.email)
+        if (form.value.idade) formData.append('idade', form.value.idade)
+        if (form.value.telefone) formData.append('telefone', form.value.telefone)
+        if (avatarFile.value) formData.append('avatar', avatarFile.value)
 
-        console.log('Enviando dados:', dataToSend)
-        
-        const response = await api.put('/auth/user/', dataToSend)
+        const response = await api.put('/auth/user/', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        })
         console.log('Resposta recebida:', response.data)
         
         localStorage.setItem('user', JSON.stringify(response.data))
@@ -181,13 +209,92 @@ export default {
       }
     }
 
+    const onFileChange = (event) => {
+      const file = event.target.files[0]
+      avatarError.value = ''
+      avatarInfo.value = ''
+      if (!file) {
+        avatarFile.value = null
+        avatarPreview.value = ''
+        return
+      }
+      if (!file.type || !file.type.startsWith('image/')) {
+        avatarError.value = 'Arquivo inválido. Selecione uma imagem.'
+        return
+      }
+      if (file.size > MAX_FILE_SIZE) {
+        const mb = (file.size / (1024 * 1024)).toFixed(2)
+        avatarError.value = `Imagem muito grande (${mb}MB). Limite: 3MB.`
+        return
+      }
+      avatarInfo.value = `${(file.size / (1024 * 1024)).toFixed(2)}MB`
+      // Redimensionar para 256x256 no cliente para reduzir tamanho
+      resizeImageToSquare(file, 256)
+        .then((resized) => {
+          avatarFile.value = resized.blob
+          avatarPreview.value = resized.dataUrl
+        })
+        .catch(() => {
+          // Fallback para arquivo original
+          avatarFile.value = file
+          avatarPreview.value = URL.createObjectURL(file)
+        })
+    }
+
+    const resizeImageToSquare = (file, size = 256) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const img = new Image()
+          img.onload = () => {
+            const canvas = document.createElement('canvas')
+            canvas.width = size
+            canvas.height = size
+            const ctx = canvas.getContext('2d')
+            if (!ctx) return reject(new Error('Canvas não suportado'))
+
+            // Crop central quadrado
+            const w = img.width
+            const h = img.height
+            const minSide = Math.min(w, h)
+            const sx = (w - minSide) / 2
+            const sy = (h - minSide) / 2
+
+            ctx.drawImage(img, sx, sy, minSide, minSide, 0, 0, size, size)
+
+            canvas.toBlob(
+              (blob) => {
+                if (!blob) return reject(new Error('Falha ao gerar imagem'))
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+                // Preservar nome base
+                const baseName = (file.name || 'avatar').replace(/\.[^/.]+$/, '')
+                const finalBlob = new File([blob], `${baseName}.jpg`, { type: 'image/jpeg' })
+                resolve({ blob: finalBlob, dataUrl })
+              },
+              'image/jpeg',
+              0.85
+            )
+          }
+          img.onerror = () => reject(new Error('Imagem inválida'))
+          img.src = reader.result
+        }
+        reader.onerror = () => reject(new Error('Falha ao ler arquivo'))
+        reader.readAsDataURL(file)
+      })
+    }
+
     return {
       showModal,
       loading,
       error,
       form,
+      avatarPreview,
+      avatarError,
+      avatarInfo,
       closeModal,
-      updateProfile
+      updateProfile,
+      onFileChange,
+      resizeImageToSquare
     }
   }
 }
@@ -209,10 +316,13 @@ export default {
 
 .modal {
   background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  width: 90%;
-  max-width: 500px;
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+  width: 92%;
+  max-width: 560px;
+  max-height: 86vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .modal-header {
@@ -242,7 +352,13 @@ export default {
 }
 
 .modal-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-body {
   padding: 20px;
+  overflow-y: auto;
 }
 
 .form-group {
@@ -261,9 +377,78 @@ export default {
   width: 100%;
   padding: 10px;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 6px;
   font-size: 0.95rem;
   font-family: inherit;
+}
+
+.avatar-section {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.avatar-preview {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border: 2px solid #e5e7eb;
+}
+
+.avatar-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.avatar-placeholder {
+  font-size: 2rem;
+  color: #9ca3af;
+}
+
+.avatar-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.avatar-upload {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+  padding: 0.55rem 0.9rem;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 2px 8px rgba(118, 75, 162, 0.3);
+}
+
+.avatar-upload input {
+  display: none;
+}
+
+.avatar-hint {
+  display: flex;
+  gap: 8px;
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.avatar-error {
+  color: #c62828;
+  background: #ffebee;
+  border-left: 4px solid #f44336;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 0.85rem;
 }
 
 .form-group input:focus {
@@ -275,7 +460,11 @@ export default {
 .form-actions {
   display: flex;
   gap: 10px;
-  margin-top: 20px;
+  padding: 12px 20px;
+  border-top: 1px solid #e6e6e6;
+  background: #fafafa;
+  position: sticky;
+  bottom: 0;
 }
 
 .btn-save,
@@ -290,7 +479,7 @@ export default {
 }
 
 .btn-save {
-  background: #667eea;
+  background: linear-gradient(135deg, #667eea, #764ba2);
   color: white;
 }
 

@@ -3,7 +3,7 @@
     <div class="header">
       <h1>🏭 Gerenciamento de Fornecedores</h1>
       <p class="subtitle">Gerencie seus fornecedores e parceiros comerciais</p>
-      <span class="badge-pro">⭐ Recurso PRO</span>
+      <span class="badge-pro">⭐ Recurso Especial</span>
     </div>
 
     <div class="actions">

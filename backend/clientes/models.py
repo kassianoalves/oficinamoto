@@ -4,6 +4,9 @@ from django.contrib.auth.models import User
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
+from django.core.files.base import ContentFile
+from io import BytesIO
+from PIL import Image
 import re
 
 def validate_cpf(value):
@@ -51,6 +54,7 @@ class Cliente(models.Model):
 class UserProfile(models.Model):
     """Perfil do usuário com informações adicionais"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    avatar = models.ImageField(upload_to='avatars/', blank=True, null=True)
     idade = models.IntegerField(null=True, blank=True)
     telefone = models.CharField(max_length=20, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -63,6 +67,38 @@ class UserProfile(models.Model):
     
     def __str__(self):
         return f'{self.user.username}'
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        # Redimensionar avatar para 256x256 (quadrado) se existir
+        if self.avatar:
+            try:
+                img = Image.open(self.avatar)
+                img_format = img.format if img.format in ['JPEG', 'PNG', 'WEBP'] else 'JPEG'
+                # Converter para RGB se necessário
+                if img.mode in ("RGBA", "P"):
+                    img = img.convert("RGB")
+                # Crop central para quadrado
+                width, height = img.size
+                min_side = min(width, height)
+                left = (width - min_side) // 2
+                top = (height - min_side) // 2
+                right = left + min_side
+                bottom = top + min_side
+                img = img.crop((left, top, right, bottom))
+                # Redimensionar para 256x256
+                img = img.resize((256, 256), Image.LANCZOS)
+                # Salvar em memória e substituir arquivo
+                buffer = BytesIO()
+                img.save(buffer, format=img_format, quality=85)
+                buffer.seek(0)
+                # Manter mesmo nome de arquivo
+                file_name = self.avatar.name.split('/')[-1]
+                self.avatar.save(file_name, ContentFile(buffer.read()), save=False)
+                super().save(update_fields=['avatar'])
+            except Exception:
+                # Em caso de problema no processamento da imagem, mantém original
+                pass
 
 
 @receiver(post_save, sender=User)
@@ -112,7 +148,6 @@ class Plan(models.Model):
     has_plano_fidelidade = models.BooleanField(default=False)
     has_agendamentos_prioritarios = models.BooleanField(default=False)
     has_loja = models.BooleanField(default=False, help_text='Loja para vender produtos')
-    has_imagem_3d = models.BooleanField(default=False, help_text='Imagens 3D dos modelos de motos')
     has_manuais = models.BooleanField(default=False, help_text='Banco de dados com manuais de reparo')
     has_plano_fidelidade = models.BooleanField(default=False)
     has_agendamentos_prioritarios = models.BooleanField(default=False)
@@ -200,26 +235,6 @@ class ProdutoLoja(models.Model):
     
     def __str__(self):
         return f"{self.nome} (R$ {self.preco})"
-
-
-class Imagem3D(models.Model):
-    """Imagens 3D dos modelos de motos (Enterprise)"""
-    from motos.models import Moto
-    
-    moto = models.ForeignKey('motos.Moto', on_delete=models.CASCADE, related_name='imagens_3d')
-    titulo = models.CharField(max_length=255)
-    descricao = models.TextField(blank=True)
-    arquivo_3d = models.FileField(upload_to='modelos_3d/', help_text='Arquivo .obj, .gltf ou .glb')
-    imagem_preview = models.ImageField(upload_to='imagens_3d_preview/')
-    data_criacao = models.DateTimeField(auto_now_add=True)
-    
-    class Meta:
-        verbose_name = 'Imagem 3D'
-        verbose_name_plural = 'Imagens 3D'
-        ordering = ['-data_criacao']
-    
-    def __str__(self):
-        return f"3D - {self.moto.marca} {self.moto.modelo}"
 
 
 class ManualsBase(models.Model):

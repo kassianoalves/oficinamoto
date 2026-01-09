@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Cliente, ProdutoLoja, Imagem3D, ManualsBase
+from .models import Cliente, ProdutoLoja, ManualsBase
 from motos.models import Moto
 
 class ClienteSerializer(serializers.ModelSerializer):
@@ -19,15 +19,6 @@ class ProdutoLojaSerializer(serializers.ModelSerializer):
         """Define automaticamente o user como o usuário logado"""
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
-
-
-class Imagem3DSerializer(serializers.ModelSerializer):
-    moto_nome = serializers.CharField(source='moto.modelo', read_only=True)
-    
-    class Meta:
-        model = Imagem3D
-        fields = ['id', 'moto', 'moto_nome', 'titulo', 'descricao', 'arquivo_3d', 'imagem_preview', 'data_criacao']
-        read_only_fields = ['id', 'data_criacao']
 
 
 class ManualsBaseSerializer(serializers.ModelSerializer):

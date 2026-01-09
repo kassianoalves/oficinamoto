@@ -8,7 +8,6 @@ import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import PlansView from '@/views/PlansView.vue'
 import FornecedoresView from '@/views/FornecedoresView.vue'
 import LojaView from '@/views/LojaView.vue'
-import Imagens3DView from '@/views/Imagens3DView.vue'
 import ManuaisView from '@/views/ManuaisView.vue'
 
 const routes = [
@@ -64,12 +63,6 @@ const routes = [
     path: '/loja',
     name: 'Loja',
     component: LojaView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/imagens-3d',
-    name: 'Imagens3D',
-    component: Imagens3DView,
     meta: { requiresAuth: true }
   },
   {

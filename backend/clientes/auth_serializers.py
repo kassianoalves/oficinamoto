@@ -154,10 +154,11 @@ class ResetPasswordSerializer(serializers.Serializer):
 class UserSerializer(serializers.ModelSerializer):
     idade = serializers.SerializerMethodField()
     telefone = serializers.SerializerMethodField()
+    avatar = serializers.SerializerMethodField()
     
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'idade', 'telefone']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'idade', 'telefone', 'avatar']
     
     def get_idade(self, obj):
         try:
@@ -171,6 +172,18 @@ class UserSerializer(serializers.ModelSerializer):
         except:
             return ''
 
+    def get_avatar(self, obj):
+        try:
+            if obj.profile.avatar:
+                request = self.context.get('request')
+                url = obj.profile.avatar.url
+                if request is not None:
+                    return request.build_absolute_uri(url)
+                return url
+        except Exception:
+            return None
+        return None
+
 
 class UpdateProfileSerializer(serializers.Serializer):
     first_name = serializers.CharField(required=False, max_length=150, allow_blank=True)
@@ -178,6 +191,22 @@ class UpdateProfileSerializer(serializers.Serializer):
     email = serializers.EmailField(required=False, allow_blank=True)
     idade = serializers.IntegerField(required=False, min_value=1, max_value=150, allow_null=True)
     telefone = serializers.CharField(required=False, max_length=20, allow_blank=True)
+    avatar = serializers.ImageField(required=False, allow_null=True)
+
+    def validate_avatar(self, value):
+        if value is None:
+            return value
+        max_size = 3 * 1024 * 1024  # 3MB
+        try:
+            if value.size > max_size:
+                raise serializers.ValidationError('Imagem muito grande. Limite: 3MB')
+            if hasattr(value, 'content_type') and value.content_type:
+                if not value.content_type.startswith('image/'):
+                    raise serializers.ValidationError('Arquivo inválido. Envie uma imagem.')
+        except Exception:
+            # Falha ao ler tamanho/tipo, prossegue com cautela
+            pass
+        return value
     
     def validate_email(self, value):
         if not value:  # Se está vazio, não valida
@@ -191,6 +220,7 @@ class UpdateProfileSerializer(serializers.Serializer):
         try:
             idade = validated_data.pop('idade', None)
             telefone = validated_data.pop('telefone', None)
+            avatar = validated_data.pop('avatar', None)
             
             # Atualizar campos do usuário
             if 'first_name' in validated_data:
@@ -215,6 +245,8 @@ class UpdateProfileSerializer(serializers.Serializer):
                 profile.idade = idade
             if telefone is not None:
                 profile.telefone = telefone
+            if avatar is not None:
+                profile.avatar = avatar
             
             profile.save()
             

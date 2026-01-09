@@ -21,7 +21,7 @@ class RegisterView(APIView):
             
             return Response({
                 'status': 'Usuário criado com sucesso',
-                'user': UserSerializer(user).data,
+                'user': UserSerializer(user, context={'request': request}).data,
                 'token': token.key
             }, status=status.HTTP_201_CREATED)
         
@@ -39,7 +39,7 @@ class LoginView(APIView):
             
             return Response({
                 'status': 'Login realizado com sucesso',
-                'user': UserSerializer(user).data,
+                'user': UserSerializer(user, context={'request': request}).data,
                 'token': token.key
             }, status=status.HTTP_200_OK)
         
@@ -75,7 +75,7 @@ class UserDetailView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        return Response(UserSerializer(request.user).data, status=status.HTTP_200_OK)
+        return Response(UserSerializer(request.user, context={'request': request}).data, status=status.HTTP_200_OK)
 
     def put(self, request):
         serializer = UpdateProfileSerializer(
@@ -86,7 +86,7 @@ class UserDetailView(APIView):
         )
         if serializer.is_valid():
             user = serializer.save()
-            return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+            return Response(UserSerializer(user, context={'request': request}).data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 

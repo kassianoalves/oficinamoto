@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cliente, UserProfile, Plan, Subscription, Fornecedor, ProdutoLoja, Imagem3D, ManualsBase
+from .models import Cliente, UserProfile, Plan, Subscription, Fornecedor, ProdutoLoja, ManualsBase
 
 @admin.register(Cliente)
 class ClienteAdmin(admin.ModelAdmin):
@@ -35,7 +35,7 @@ class PlanAdmin(admin.ModelAdmin):
                       'has_ia_diagnostico', 'has_plano_fidelidade', 'has_agendamentos_prioritarios')
         }),
         ('Recursos Enterprise', {
-            'fields': ('has_loja', 'has_imagem_3d', 'has_manuais')
+            'fields': ('has_loja', 'has_manuais')
         }),
     )
 
@@ -63,14 +63,6 @@ class ProdutoLojaAdmin(admin.ModelAdmin):
     search_fields = ['nome', 'sku', 'user__username']
     readonly_fields = ['data_criacao']
     list_editable = ['estoque', 'ativo']
-
-
-@admin.register(Imagem3D)
-class Imagem3DAdmin(admin.ModelAdmin):
-    list_display = ['moto', 'titulo', 'data_criacao']
-    list_filter = ['data_criacao', 'moto__marca']
-    search_fields = ['titulo', 'moto__placa', 'moto__cliente__nome']
-    readonly_fields = ['data_criacao']
 
 
 @admin.register(ManualsBase)

@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-from .models import Cliente, ProdutoLoja, Imagem3D, ManualsBase
-from .serializers import ClienteSerializer, ProdutoLojaSerializer, Imagem3DSerializer, ManualsBaseSerializer
+from .models import Cliente, ProdutoLoja, ManualsBase
+from .serializers import ClienteSerializer, ProdutoLojaSerializer, ManualsBaseSerializer
 from .group_permissions import HasGroupPermission, IsAdminGroup
 
 class ClienteViewSet(viewsets.ModelViewSet):
@@ -94,19 +94,6 @@ class ProdutoLojaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         instance.delete()
-
-
-class Imagem3DViewSet(viewsets.ModelViewSet):
-    """ViewSet para Imagens 3D das Motos (Enterprise)"""
-    serializer_class = Imagem3DSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get_queryset(self):
-        """Retorna imagens das motos do usuário"""
-        from motos.models import Moto
-        usuario_motos = Moto.objects.filter(cliente__user=self.request.user)
-        return Imagem3D.objects.filter(moto__in=usuario_motos)
 
 
 class ManualsBaseViewSet(viewsets.ReadOnlyModelViewSet):
