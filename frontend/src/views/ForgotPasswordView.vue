@@ -2,7 +2,7 @@
   <div class="auth-container">
     <div class="auth-box">
       <div class="auth-header">
-        <h1>🏍️ Oficina Moto</h1>
+        <h1>🏍️ Moto Express</h1>
       </div>
 
       <div class="auth-form">

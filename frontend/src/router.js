@@ -46,7 +46,7 @@ const routes = [
   },
   {
     path: '/manutencoes',
-    name: 'Manutenções',
+    name: 'Agendamento',
     component: ManutencaoView,
     meta: { requiresAuth: true }
   }

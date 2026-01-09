@@ -2,13 +2,13 @@
   <div id="app" class="app-container">
     <nav class="navbar">
       <div class="logo">
-        <h1>🏍️ Oficina Moto</h1>
+        <h1>Moto Express</h1>
       </div>
       <ul class="nav-menu">
         <li v-if="isAuthenticated"><router-link to="/">Home</router-link></li>
         <li v-if="isAuthenticated"><router-link to="/clientes">Clientes</router-link></li>
         <li v-if="isAuthenticated"><router-link to="/motos">Motos</router-link></li>
-        <li v-if="isAuthenticated"><router-link to="/manutencoes">Manutenções</router-link></li>
+        <li v-if="isAuthenticated"><router-link to="/manutencoes">Agendamento</router-link></li>
         <li v-if="!isAuthenticated"><router-link to="/login">🔐 Login</router-link></li>
         <li v-if="!isAuthenticated"><router-link to="/register">📝 Cadastrar</router-link></li>
         <li v-if="isAuthenticated" class="user-menu">
@@ -89,7 +89,7 @@ export default {
 
 body {
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  background: #f5f5f5;
+  background: #ffffff;
 }
 
 .app-container {

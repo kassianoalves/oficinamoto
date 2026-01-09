@@ -21,7 +21,7 @@
           <input v-model="form.nome" type="text" placeholder="Nome completo" required minlength="3">
           <input 
             v-model="form.cpf" 
-            type="text" 
+            type="number" 
             placeholder="CPF (000.000.000-00)" 
             required 
             maxlength="14"
@@ -57,8 +57,49 @@
           <p><strong>Endereço:</strong> {{ cliente.endereco }}, {{ cliente.cidade }}</p>
         </div>
         <div class="cliente-actions">
+          <button @click="verHistorico(cliente)" class="btn btn-history">📋 Histórico</button>
           <button @click="editarCliente(cliente)" class="btn btn-edit">✏️ Editar</button>
           <button @click="deletarCliente(cliente.id)" class="btn btn-delete">🗑️ Deletar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Histórico -->
+    <div v-if="showHistorico" class="modal-overlay" @click="closeHistorico">
+      <div class="modal-historico" @click.stop>
+        <div class="modal-header">
+          <h3>📋 Histórico de {{ clienteSelecionado?.nome }}</h3>
+          <button class="close-btn" @click="closeHistorico">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="historico-section">
+            <h4>🏍️ Motos Cadastradas ({{ motosCliente.length }})</h4>
+            <div v-if="motosCliente.length" class="motos-list">
+              <div v-for="moto in motosCliente" :key="moto.id" class="moto-item">
+                <p><strong>{{ moto.marca }} {{ moto.modelo }}</strong></p>
+                <p class="moto-details">{{ moto.placa }} - {{ moto.ano }}</p>
+              </div>
+            </div>
+            <p v-else class="empty-msg">Nenhuma moto cadastrada</p>
+          </div>
+
+          <div class="historico-section">
+            <h4>🔧 Manutenções Concluídas ({{ manutencoesCliente.length }})</h4>
+            <div v-if="manutencoesCliente.length" class="manutencoes-list">
+              <div v-for="manutencao in manutencoesCliente" :key="manutencao.id" class="manutencao-item">
+                <div class="manutencao-header">
+                  <strong>{{ getMotoDados(manutencao.moto) }}</strong>
+                  <span class="data-badge">{{ formatDate(manutencao.data_agendada) }}</span>
+                </div>
+                <p><strong>Serviço:</strong> {{ getTipoServico(manutencao.tipo_servico) }}</p>
+                <p v-if="manutencao.observacoes" class="observacoes">{{ manutencao.observacoes }}</p>
+              </div>
+            </div>
+            <p v-else class="empty-msg">Nenhuma manutenção concluída</p>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button @click="closeHistorico" class="btn btn-secondary">Fechar</button>
         </div>
       </div>
     </div>
@@ -82,6 +123,10 @@ export default {
     const showForm = ref(false)
     const editingId = ref(null)
     const filtro = ref('')
+    const showHistorico = ref(false)
+    const clienteSelecionado = ref(null)
+    const motosCliente = ref([])
+    const manutencoesCliente = ref([])
     const form = ref({
       nome: '',
       cpf: '',
@@ -189,6 +234,57 @@ export default {
       showForm.value = false
     }
 
+    const verHistorico = async (cliente) => {
+      clienteSelecionado.value = cliente
+      showHistorico.value = true
+      
+      try {
+        // Carregar motos do cliente
+        const resMotos = await api.get('/motos/')
+        const todasMotos = resMotos.data.results || resMotos.data || []
+        motosCliente.value = todasMotos.filter(m => m.cliente === cliente.id)
+
+        // Carregar manutenções concluídas das motos do cliente
+        const resAgendamentos = await api.get('/agendamentos/')
+        const todosAgendamentos = resAgendamentos.data.results || resAgendamentos.data || []
+        const motosIds = motosCliente.value.map(m => m.id)
+        manutencoesCliente.value = todosAgendamentos.filter(a => 
+          a.status === 'concluido' && motosIds.includes(a.moto)
+        )
+      } catch (err) {
+        console.error('Erro ao carregar histórico:', err)
+        error('Erro ao carregar histórico do cliente')
+      }
+    }
+
+    const closeHistorico = () => {
+      showHistorico.value = false
+      clienteSelecionado.value = null
+      motosCliente.value = []
+      manutencoesCliente.value = []
+    }
+
+    const getMotoDados = (motoId) => {
+      const moto = motosCliente.value.find(m => m.id === motoId)
+      return moto ? `${moto.marca} ${moto.modelo} (${moto.placa})` : 'Moto desconhecida'
+    }
+
+    const getTipoServico = (tipo) => {
+      const tipos = {
+        'troca': 'Troca de Óleo',
+        'reparo': 'Reparo',
+        'assistencia': 'Assistência',
+        'vistoria': 'Vistoria',
+        'manutencao': 'Manutenção Periódica'
+      }
+      return tipos[tipo] || tipo
+    }
+
+    const formatDate = (dateString) => {
+      const date = new Date(dateString)
+      return date.toLocaleDateString('pt-BR') + ' ' + date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+    }
+
     onMounted(carregarClientes)
 
     return {
@@ -198,10 +294,19 @@ export default {
       editingId,
       form,
       filtro,
+      showHistorico,
+      clienteSelecionado,
+      motosCliente,
+      manutencoesCliente,
       salvarCliente,
       editarCliente,
       deletarCliente,
       resetForm,
+      verHistorico,
+      closeHistorico,
+      getMotoDados,
+      getTipoServico,
+      formatDate,
       formatCPF,
       formatTelefone
     }
@@ -369,6 +474,12 @@ export default {
   margin-top: 1rem;
 }
 
+.btn-history {
+  background: #00d084;
+  color: white;
+  flex: 1;
+}
+
 .btn-edit {
   background: #4facfe;
   color: white;
@@ -381,9 +492,153 @@ export default {
   flex: 1;
 }
 
+.btn-history:hover,
 .btn-edit:hover,
 .btn-delete:hover {
   opacity: 0.9;
+}
+
+/* Modal Histórico */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 1rem;
+}
+
+.modal-historico {
+  background: white;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  padding: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #667eea;
+  font-size: 1.4rem;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: #999;
+  transition: color 0.2s;
+}
+
+.close-btn:hover {
+  color: #333;
+}
+
+.modal-body {
+  padding: 1.5rem;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.historico-section {
+  margin-bottom: 2rem;
+}
+
+.historico-section h4 {
+  color: #333;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 0.5rem;
+}
+
+.motos-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.moto-item {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #667eea;
+}
+
+.moto-item p {
+  margin: 0.25rem 0;
+  color: #333;
+}
+
+.moto-details {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.manutencoes-list {
+  display: grid;
+  gap: 1rem;
+}
+
+.manutencao-item {
+  background: #f8f9fa;
+  padding: 1rem;
+  border-radius: 8px;
+  border-left: 4px solid #00d084;
+}
+
+.manutencao-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.data-badge {
+  background: #667eea;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.manutencao-item p {
+  margin: 0.25rem 0;
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.observacoes {
+  font-style: italic;
+  color: #999;
+}
+
+.empty-msg {
+  text-align: center;
+  color: #999;
+  padding: 2rem;
+  font-style: italic;
+}
+
+.modal-footer {
+  padding: 1.5rem;
+  border-top: 2px solid #f0f0f0;
+  display: flex;
+  justify-content: flex-end;
 }
 
 .empty-state {

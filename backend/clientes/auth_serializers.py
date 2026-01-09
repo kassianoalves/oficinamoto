@@ -38,17 +38,37 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    email = serializers.EmailField()
+    username = serializers.CharField(required=False, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
     password = serializers.CharField(write_only=True)
 
     def validate(self, data):
-        try:
-            user = User.objects.get(email=data['email'])
-            if not user.check_password(data['password']):
-                raise serializers.ValidationError('Senha incorreta')
-        except User.DoesNotExist:
-            raise serializers.ValidationError('Email não encontrado')
-        
+        username = data.get('username', '').strip()
+        email = data.get('email', '').strip()
+        password = data.get('password')
+
+        if not username and not email:
+            raise serializers.ValidationError('Forneça um email ou nome de usuário')
+
+        user = None
+
+        if email:
+            try:
+                user = User.objects.get(email=email)
+            except User.DoesNotExist:
+                pass
+
+        if not user and username:
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                pass
+
+        if not user:
+            raise serializers.ValidationError('Usuário ou email não encontrado')
+
+        if not user.check_password(password):
+            raise serializers.ValidationError('Senha incorreta')
         data['user'] = user
         return data
 

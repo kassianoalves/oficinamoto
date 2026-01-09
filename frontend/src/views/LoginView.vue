@@ -2,32 +2,31 @@
   <div class="auth-container">
     <div class="auth-box">
       <div class="auth-header">
-        <h1>🏍️ Oficina Moto</h1>
-        <p>Sistema de Gerenciamento</p>
+        <h1>🏍️ Moto Express</h1>
       </div>
-
       <div class="auth-form">
+
         <h2>Entrar na Conta</h2>
-        
+
         <form @submit.prevent="login">
           <div class="form-group">
-            <label for="email">Email:</label>
-            <input 
-              v-model="form.email" 
-              type="email" 
-              id="email" 
-              placeholder="seu@email.com"
+            <label for="login">Login (Email ou Usuário):</label>
+            <input
+              v-model="form.login"
+              type="text"
+              id="login"
+              placeholder="seu email ou usuário"
               required
             >
           </div>
 
           <div class="form-group">
             <label for="password">Senha:</label>
-            <input 
-              v-model="form.password" 
-              type="password" 
-              id="password" 
-              placeholder="Sua senha"
+            <input
+              v-model="form.password"
+              type="password"
+              id="password"
+              placeholder="sua senha"
               required
             >
           </div>
@@ -61,7 +60,7 @@ export default {
   setup() {
     const router = useRouter()
     const form = ref({
-      email: '',
+      login: '',
       password: ''
     })
     const error = ref('')
@@ -72,18 +71,31 @@ export default {
       loading.value = true
 
       try {
-        const response = await api.post('/auth/login/', form.value)
-        
+        const loginValue = form.value.login.trim()
+        const payload = {
+          password: form.value.password
+        }
+
+        // Detectar se é email ou username
+        if (loginValue.includes('@')) {
+          payload.email = loginValue
+        } else {
+          payload.username = loginValue
+        }
+
+        const response = await api.post('/auth/login/', payload)
+
         // Armazenar token no localStorage
         localStorage.setItem('authToken', response.data.token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
-        
+
         // Redirecionar para home
         router.push('/')
       } catch (err) {
         console.error('Erro:', err)
-        error.value = err.response?.data?.email?.[0] || 
-                     err.response?.data?.password?.[0] || 
+        error.value = err.response?.data?.email?.[0] ||
+                     err.response?.data?.username?.[0] ||
+                     err.response?.data?.password?.[0] ||
                      err.response?.data?.non_field_errors?.[0] ||
                      'Erro ao fazer login'
       } finally {
@@ -163,7 +175,7 @@ export default {
   display: block;
   margin-bottom: 0.5rem;
   color: #333;
-  font-weight: 500;
+  font-weight: 600;
 }
 
 .form-group input {
@@ -172,8 +184,8 @@ export default {
   border: 1px solid #ddd;
   border-radius: 6px;
   font-size: 1rem;
-  transition: all 0.3s;
-  box-sizing: border-box;
+  font-family: inherit;
+  transition: border-color 0.3s;
 }
 
 .form-group input:focus {
@@ -192,16 +204,16 @@ export default {
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .btn-submit:hover:not(:disabled) {
   transform: translateY(-2px);
-  box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
 }
 
 .btn-submit:disabled {
-  opacity: 0.6;
+  opacity: 0.7;
   cursor: not-allowed;
 }
 
@@ -212,6 +224,7 @@ export default {
   border-radius: 6px;
   margin: 1rem 0;
   text-align: center;
+  font-weight: 500;
 }
 
 .auth-links {

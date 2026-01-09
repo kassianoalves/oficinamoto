@@ -35,7 +35,7 @@ class Agendamento(models.Model):
     observacoes = models.TextField(blank=True)
     status = models.CharField(
         max_length=20,
-        choices=[('pendente', 'Pendente'), ('confirmado', 'Confirmado'), ('cancelado', 'Cancelado')],
+        choices=[('pendente', 'Pendente'), ('confirmado', 'Confirmado'), ('concluido', 'Concluído'), ('cancelado', 'Cancelado')],
         default='pendente'
     )
     data_criacao = models.DateTimeField(auto_now_add=True)

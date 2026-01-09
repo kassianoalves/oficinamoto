@@ -1,7 +1,7 @@
 <template>
   <div class="home-view">
     <div class="hero">
-      <h1>Bem-vindo ao Gerenciador de Oficina de Motos</h1>
+      <h1>Bem-vindo ao Gerenciador de Moto Express</h1>
       <p>Sistema completo para gerenciar clientes, motos e manutenções</p>
     </div>
 

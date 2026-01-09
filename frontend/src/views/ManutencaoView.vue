@@ -1,12 +1,13 @@
 <template>
   <div class="manutencao-view">
     <div class="view-header">
-      <h2>Manutenções e Agendamentos ({{ agendamentosFiltrados.length }})</h2>
+      <h2>Agendamentos ({{ agendamentosFiltrados.length }})</h2>
       <div class="header-actions">
         <select v-model="filtroStatus" class="filter-select">
           <option value="">Todos os Status</option>
           <option value="pendente">Pendente</option>
           <option value="confirmado">Confirmado</option>
+          <option value="concluido">Concluído</option>
           <option value="cancelado">Cancelado</option>
         </select>
         <button @click="showForm = !showForm" class="btn-add">➕ Novo Agendamento</button>
@@ -18,10 +19,16 @@
       <form @submit.prevent="salvarAgendamento">
         <h3>{{ editingId ? 'Editar Agendamento' : 'Novo Agendamento' }}</h3>
         <div class="form-grid">
-          <select v-model="form.moto" required>
-            <option value="">Selecione a Moto</option>
-            <option v-for="moto in motos" :key="moto.id" :value="moto.id">
-              {{ moto.marca }} {{ moto.modelo }} ({{ moto.placa }})
+          <select v-model="clienteSelecionado" @change="carregarMotosCliente" required>
+            <option value="">Selecione o Cliente</option>
+            <option v-for="cliente in clientes" :key="cliente.id" :value="cliente.id">
+              {{ cliente.nome }} ({{ cliente.telefone }})
+            </option>
+          </select>
+          <select v-model="form.moto" :disabled="!clienteSelecionado" required>
+            <option value="">{{ clienteSelecionado ? 'Selecione a Moto' : 'Selecione um cliente primeiro' }}</option>
+            <option v-for="moto in motosCliente" :key="moto.id" :value="moto.id">
+              {{ moto.marca }} {{ moto.modelo }} ({{ moto.placa }}) - {{ moto.ano }}
             </option>
           </select>
           <select v-model="form.tipo_servico" required>
@@ -35,6 +42,7 @@
           <select v-model="form.status">
             <option value="pendente">Pendente</option>
             <option value="confirmado">Confirmado</option>
+            <option value="concluido">Concluído</option>
             <option value="cancelado">Cancelado</option>
           </select>
         </div>
@@ -52,7 +60,8 @@
     <div v-if="agendamentosFiltrados.length" class="agendamentos-list">
       <div v-for="agendamento in agendamentosFiltrados" :key="agendamento.id" class="agendamento-card" :class="getStatusClass(agendamento.status)">
         <div class="agendamento-info">
-          <h4>{{ getMotoDados(agendamento.moto) }}</h4>
+          <h4>{{ getClienteNome(agendamento.moto) }}</h4>
+          <p><strong>Moto:</strong> {{ getMotoDados(agendamento.moto) }}</p>
           <p><strong>Tipo:</strong> {{ getTipoServico(agendamento.tipo_servico) }}</p>
           <p><strong>Data/Hora:</strong> {{ formatDate(agendamento.data_agendada) }}</p>
           <p><strong>Status:</strong> <span class="status-badge">{{ agendamento.status }}</span></p>
@@ -60,6 +69,7 @@
         </div>
         <div class="agendamento-actions">
           <button @click="editarAgendamento(agendamento)" class="btn btn-edit">✏️ Editar</button>
+          <button v-if="agendamento.status !== 'concluido'" @click="finalizarAgendamento(agendamento)" class="btn btn-finish">✓ Finalizar</button>
           <button @click="deletarAgendamento(agendamento.id)" class="btn btn-delete">🗑️ Deletar</button>
         </div>
       </div>
@@ -82,6 +92,9 @@ export default {
     const { success, error } = useToast()
     const agendamentos = ref([])
     const motos = ref([])
+    const clientes = ref([])
+    const clienteSelecionado = ref('')
+    const motosCliente = ref([])
     const showForm = ref(false)
     const editingId = ref(null)
     const filtroStatus = ref('')
@@ -94,8 +107,16 @@ export default {
     })
 
     const agendamentosFiltrados = computed(() => {
-      if (!filtroStatus.value) return agendamentos.value
-      return agendamentos.value.filter(a => a.status === filtroStatus.value)
+      let lista = agendamentos.value
+      
+      // Se não houver filtro específico, oculta os concluídos
+      if (!filtroStatus.value) {
+        lista = lista.filter(a => a.status !== 'concluido')
+      } else {
+        lista = lista.filter(a => a.status === filtroStatus.value)
+      }
+      
+      return lista
     })
 
     const carregarAgendamentos = async () => {
@@ -118,6 +139,33 @@ export default {
       }
     }
 
+    const carregarClientes = async () => {
+      try {
+        const res = await api.get('/clientes/')
+        clientes.value = res.data.results || res.data || []
+      } catch (err) {
+        console.error('Erro ao carregar clientes:', err)
+        error('Erro ao carregar clientes')
+      }
+    }
+
+    const carregarMotosCliente = async () => {
+      if (!clienteSelecionado.value) {
+        motosCliente.value = []
+        form.value.moto = ''
+        return
+      }
+      try {
+        const res = await api.get('/motos/')
+        const todasMotos = res.data.results || res.data || []
+        motosCliente.value = todasMotos.filter(m => m.cliente === parseInt(clienteSelecionado.value))
+        form.value.moto = '' // Limpa a seleção de moto ao trocar de cliente
+      } catch (err) {
+        console.error('Erro ao carregar motos do cliente:', err)
+        error('Erro ao carregar motos do cliente')
+      }
+    }
+
     const getTipoServico = (tipo) => {
       const tipos = {
         'troca': 'Troca de Óleo',
@@ -132,6 +180,13 @@ export default {
     const getMotoDados = (motoId) => {
       const moto = motos.value.find(m => m.id === motoId)
       return moto ? `${moto.marca} ${moto.modelo} (${moto.placa})` : 'Moto desconhecida'
+    }
+
+    const getClienteNome = (motoId) => {
+      const moto = motos.value.find(m => m.id === motoId)
+      if (!moto) return 'Cliente desconhecido'
+      const cliente = clientes.value.find(c => c.id === moto.cliente)
+      return cliente ? cliente.nome : 'Cliente desconhecido'
     }
 
     const formatDate = (dateString) => {
@@ -182,6 +237,28 @@ export default {
       }
     }
 
+    const finalizarAgendamento = async (agendamento) => {
+      try {
+        const payload = {
+          moto: agendamento.moto,
+          tipo_servico: agendamento.tipo_servico,
+          data_agendada: agendamento.data_agendada,
+          observacoes: agendamento.observacoes,
+          status: 'concluido'
+        }
+        await api.put(`/agendamentos/${agendamento.id}/`, payload)
+        success('Agendamento finalizado com sucesso!')
+        carregarAgendamentos()
+      } catch (err) {
+        console.error('Erro ao finalizar agendamento:', err)
+        const errorMsg = err.response?.data?.detail ||
+                        err.response?.data?.non_field_errors?.[0] ||
+                        Object.values(err.response?.data || {}).flat()[0] ||
+                        'Erro ao finalizar agendamento'
+        error(errorMsg)
+      }
+    }
+
     const resetForm = () => {
       form.value = {
         moto: '',
@@ -190,12 +267,15 @@ export default {
         observacoes: '',
         status: 'pendente'
       }
+      clienteSelecionado.value = ''
+      motosCliente.value = []
       editingId.value = null
       showForm.value = false
     }
 
     onMounted(() => {
       carregarMotos()
+      carregarClientes()
       carregarAgendamentos()
     })
 
@@ -203,16 +283,22 @@ export default {
       agendamentos,
       agendamentosFiltrados,
       motos,
+      clientes,
+      clienteSelecionado,
+      motosCliente,
       showForm,
       editingId,
       form,
       filtroStatus,
+      carregarMotosCliente,
       salvarAgendamento,
       editarAgendamento,
       deletarAgendamento,
+      finalizarAgendamento,
       resetForm,
       getTipoServico,
       getMotoDados,
+      getClienteNome,
       formatDate,
       getStatusClass
     }
@@ -390,6 +476,10 @@ export default {
   border-left-color: #4facfe;
 }
 
+.agendamento-card.status-concluido {
+  border-left-color: #00d084;
+}
+
 .agendamento-card.status-cancelado {
   border-left-color: #f5576c;
 }
@@ -433,6 +523,12 @@ export default {
   flex: 1;
 }
 
+.btn-finish {
+  background: #00d084;
+  color: white;
+  flex: 1;
+}
+
 .btn-delete {
   background: #f5576c;
   color: white;
@@ -440,6 +536,7 @@ export default {
 }
 
 .btn-edit:hover,
+.btn-finish:hover,
 .btn-delete:hover {
   opacity: 0.9;
 }
