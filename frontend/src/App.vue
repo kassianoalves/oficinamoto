@@ -4,24 +4,30 @@
       <div class="logo">
         <h1>Moto Express</h1>
       </div>
-      <ul class="nav-menu">
-        <li v-if="isAuthenticated"><router-link to="/">🏠 Home</router-link></li>
-        <li v-if="isAuthenticated"><router-link to="/clientes">👥 Clientes</router-link></li>
-        <li v-if="isAuthenticated"><router-link to="/manutencoes">🔧 Agendamento</router-link></li>
-        <li v-if="isAuthenticated && isPro"><router-link to="/fornecedores">🏭 Fornecedores</router-link></li>
-        <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/loja">🛍️ Loja</router-link></li>
-        <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/imagens-3d">🎨 3D</router-link></li>
-        <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/manuais">📚 Manuais</router-link></li>
-        <li v-if="isAuthenticated"><router-link to="/planos">💎 Planos</router-link></li>
-        <li v-if="!isAuthenticated"><router-link to="/login">🔐 Login</router-link></li>
-        <li v-if="!isAuthenticated"><router-link to="/register">📝 Cadastrar</router-link></li>
-        <li v-if="isAuthenticated" class="user-menu">
-          <button @click="openProfileModal" class="btn-user-profile">
-            👤 {{ displayName }} <span v-if="isPro" class="badge-pro">⭐ PRO</span><span v-if="isEnterprise" class="badge-enterprise">👑 ENTERPRISE</span>
-          </button>
-          <button @click="logout" class="btn-logout">🚪 Sair</button>
-        </li>
-      </ul>
+      <div class="nav-sections">
+        <ul class="nav-menu">
+          <li v-if="isAuthenticated"><router-link to="/">Home</router-link></li>
+          <li v-if="isAuthenticated"><router-link to="/clientes">Clientes</router-link></li>
+          <li v-if="isAuthenticated"><router-link to="/manutencoes">Agendamento</router-link></li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/fornecedores">Fornecedores</router-link></li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/loja">Loja</router-link></li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/imagens-3d">3D</router-link></li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/manuais">Manuais</router-link></li>
+          <li v-if="isAuthenticated"><router-link to="/planos">Planos</router-link></li>
+        </ul>
+        <div class="nav-actions">
+          <template v-if="!isAuthenticated">
+            <router-link class="nav-btn" to="/login">Login</router-link>
+            <router-link class="nav-btn nav-btn-primary" to="/register">Cadastrar</router-link>
+          </template>
+          <template v-else>
+            <button @click="openProfileModal" class="btn-user-profile">
+              {{ displayName }} <span v-if="isPro" class="badge-pro">PRO</span><span v-if="isEnterprise" class="badge-enterprise">ENTERPRISE</span>
+            </button>
+            <button @click="logout" class="btn-logout">Sair</button>
+          </template>
+        </div>
+      </div>
     </nav>
     <main class="main-content">
       <router-view @login="checkAuth" />
@@ -173,8 +179,8 @@ body {
   color: white;
   padding: 1rem 2rem;
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 1.5rem;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
@@ -183,26 +189,74 @@ body {
   font-weight: 700;
 }
 
+.nav-sections {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex: 1;
+}
+
 .nav-menu {
   display: flex;
   list-style: none;
-  gap: 1rem;
+  gap: 0.75rem;
   align-items: center;
+  margin: 0;
+  padding: 0;
+}
+
+.nav-menu li {
+  list-style: none;
 }
 
 .nav-menu a {
   color: white;
   text-decoration: none;
   font-weight: 500;
-  font-size: 1.05rem;
+  font-size: 0.98rem;
   padding: 0.5rem 1rem;
-  border-radius: 4px;
-  transition: background 0.3s;
+  border-radius: 6px;
+  transition: background 0.3s, transform 0.2s;
 }
 
 .nav-menu a:hover,
 .nav-menu a.router-link-active {
   background-color: #903dc7;
+  transform: translateY(-2px);
+}
+
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nav-btn {
+  color: white;
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.5rem 0.9rem;
+  font-size: 0.95rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  transition: all 0.3s ease;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.nav-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: translateY(-2px);
+}
+
+.nav-btn-primary {
+  background: #ffb347;
+  color: #2d3748;
+  border-color: #ffb347;
+}
+
+.nav-btn-primary:hover {
+  background: #ff9f1c;
 }
 
 .user-menu {
@@ -220,7 +274,7 @@ body {
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
-  font-size: 1.05rem;
+  font-size: 1rem;
   display: flex;
   align-items: center;
   gap: 0.5rem;
@@ -288,17 +342,32 @@ body {
 @media (max-width: 768px) {
   .navbar {
     flex-direction: column;
-    gap: 1rem;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+
+  .nav-sections {
+    width: 100%;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
   }
 
   .nav-menu {
-    gap: 1rem;
+    gap: 0.5rem;
     flex-wrap: wrap;
-    justify-content: center;
+    justify-content: flex-start;
   }
 
   .logo h1 {
     font-size: 1.4rem;
+  }
+
+  .nav-actions {
+    width: 100%;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .main-content {
