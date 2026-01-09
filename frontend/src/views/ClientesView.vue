@@ -17,28 +17,57 @@
     <div v-if="showForm" class="form-container">
       <form @submit.prevent="salvarCliente">
         <h3>{{ editingId ? 'Editar Cliente' : 'Novo Cliente' }}</h3>
-        <div class="form-grid">
-          <input v-model="form.nome" type="text" placeholder="Nome completo" required minlength="3">
-          <input 
-            v-model="form.cpf" 
-            type="number" 
-            placeholder="CPF (000.000.000-00)" 
-            required 
-            maxlength="14"
-            @input="formatCPF"
-          >
-          <input v-model="form.email" type="email" placeholder="Email" pattern="[^@]+@[^@]+\.[a-zA-Z]{2,}">
-          <input 
-            v-model="form.telefone" 
-            type="tel" 
-            placeholder="Telefone (00) 00000-0000" 
-            required
-            maxlength="15"
-            @input="formatTelefone"
-          >
-          <input v-model="form.endereco" type="text" placeholder="Endereço" required>
-          <input v-model="form.cidade" type="text" placeholder="Cidade" required>
+        
+        <!-- Dados do Cliente -->
+        <div class="form-section">
+          <h4>Dados Pessoais</h4>
+          <div class="form-grid">
+            <input v-model="form.nome" type="text" placeholder="Nome completo" required minlength="3">
+            <input 
+              v-model="form.cpf" 
+              type="CPF" 
+              placeholder="CPF (000.000.000-00)" 
+              required 
+              maxlength="14"
+              @input="formatCPF"
+            >
+            <input v-model="form.email" type="email" placeholder="Email" pattern="[^@]+@[^@]+\.[a-zA-Z]{2,}">
+            <input 
+              v-model="form.telefone" 
+              type="tel" 
+              placeholder="Telefone (00) 00000-0000" 
+              required
+              maxlength="15"
+              @input="formatTelefone"
+            >
+            <input v-model="form.endereco" type="text" placeholder="Endereço" required>
+            <input v-model="form.cidade" type="text" placeholder="Cidade" required>
+          </div>
         </div>
+
+        <!-- Dados das Motos -->
+        <div class="form-section">
+          <div class="section-header">
+            <h4>Motos do Cliente</h4>
+            <button type="button" @click="adicionarMoto" class="btn-add-moto">+ Adicionar Moto</button>
+          </div>
+
+          <div v-if="form.motos.length" class="motos-form-list">
+            <div v-for="(moto, index) in form.motos" :key="index" class="moto-form-item">
+              <div class="moto-form-grid">
+                <input v-model="moto.marca" type="text" placeholder="Marca (ex: Honda)" required>
+                <input v-model="moto.modelo" type="text" placeholder="Modelo (ex: CB 500)" required>
+                <input v-model="moto.placa" type="text" placeholder="Placa (ex: ABC-1234)" required>                <input v-model="moto.numero_serie" type="text" placeholder="Número de Série" required>                <input v-model="moto.ano" type="number" placeholder="Ano" min="1950" :max="new Date().getFullYear()" required>
+                <input v-model="moto.cor" type="text" placeholder="Cor" required>
+                <input v-model="moto.cilindrada" type="number" placeholder="Cilindrada (cc)" min="0">
+                <textarea v-model="moto.observacoes" placeholder="Observações" rows="2"></textarea>
+              </div>
+              <button type="button" @click="removerMoto(index)" class="btn-remove-moto">Remover</button>
+            </div>
+          </div>
+          <p v-else class="no-motos">Nenhuma moto adicionada ainda</p>
+        </div>
+
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">{{ editingId ? 'Atualizar' : 'Salvar' }}</button>
           <button type="button" @click="resetForm" class="btn btn-secondary">Cancelar</button>
@@ -133,7 +162,8 @@ export default {
       email: '',
       telefone: '',
       endereco: '',
-      cidade: ''
+      cidade: '',
+      motos: []
     })
 
     const clientesFiltrados = computed(() => {
@@ -172,6 +202,15 @@ export default {
       form.value.telefone = value
     }
 
+    const validarPlaca = (placa) => {
+      // Formato antigo: ABC1234
+      // Formato Mercosul: ABC1D23
+      const placaLimpa = placa.toUpperCase().replace('-', '').replace(' ', '')
+      const regexAntiga = /^[A-Z]{3}\d{4}$/
+      const regexMercosul = /^[A-Z]{3}\d[A-Z0-9]\d{2}$/
+      return regexAntiga.test(placaLimpa) || regexMercosul.test(placaLimpa)
+    }
+
     const carregarClientes = async () => {
       try {
         const res = await api.get('/clientes/')
@@ -184,28 +223,156 @@ export default {
 
     const salvarCliente = async () => {
       try {
+        // Validar motos antes de salvar
+        if (form.value.motos.length > 0) {
+          for (const moto of form.value.motos) {
+            if (!moto.marca || !moto.modelo || !moto.placa || !moto.numero_serie || !moto.ano || !moto.cor) {
+              error('Todos os campos das motos são obrigatórios!')
+              return
+            }
+            if (!validarPlaca(moto.placa)) {
+              error(`Placa inválida: "${moto.placa}". Use formato ABC-1234 ou ABC1D23`)
+              return
+            }
+          }
+        }
+
+        const clienteData = {
+          nome: form.value.nome,
+          cpf: form.value.cpf,
+          email: form.value.email,
+          telefone: form.value.telefone,
+          endereco: form.value.endereco,
+          cidade: form.value.cidade
+        }
+
+        let clienteId = editingId.value
+        
         if (editingId.value) {
-          await api.put(`/clientes/${editingId.value}/`, form.value)
+          await api.put(`/clientes/${editingId.value}/`, clienteData)
           success('Cliente atualizado com sucesso!')
         } else {
-          await api.post('/clientes/', form.value)
+          const res = await api.post('/clientes/', clienteData)
+          clienteId = res.data.id
           success('Cliente cadastrado com sucesso!')
         }
+
+        // Salvar motos do cliente
+        if (form.value.motos.length > 0) {
+          for (const moto of form.value.motos) {
+            try {
+              // Se a moto não tem ID, é uma nova moto
+              if (!moto.id) {
+                console.log('Salvando nova moto:', moto)
+                await api.post('/motos/', {
+                  ...moto,
+                  cliente: clienteId
+                })
+              } else {
+                // Se tem ID, atualizar moto existente
+                console.log('Atualizando moto:', moto)
+                await api.put(`/motos/${moto.id}/`, {
+                  ...moto,
+                  cliente: clienteId
+                })
+              }
+            } catch (motoErr) {
+              console.error('Erro ao salvar moto:', motoErr)
+              console.error('Dados da moto:', moto)
+              console.error('Cliente ID:', clienteId)
+              throw motoErr
+            }
+          }
+          success('Motos do cliente salvas com sucesso!')
+        }
+
         resetForm()
         carregarClientes()
       } catch (err) {
-        console.error('Erro ao salvar cliente:', err)
-        const errorMsg = err.response?.data?.cpf?.[0] || 
-                        err.response?.data?.detail || 
-                        'Erro ao salvar cliente'
+        console.error('Erro completo ao salvar cliente:', err)
+        console.error('Resposta do erro:', err.response?.data)
+        
+        // Tentar extrair mensagens de erro específicas
+        let errorMsg = 'Erro ao salvar cliente ou moto'
+        const errorData = err.response?.data
+        
+        if (errorData) {
+          // Se tem array de erros
+          if (errorData.placa && Array.isArray(errorData.placa)) {
+            console.error('Erro de placa:', errorData.placa[0])
+            errorMsg = `Erro na placa: ${errorData.placa[0]}`
+          } else if (errorData.numero_serie && Array.isArray(errorData.numero_serie)) {
+            console.error('Erro de número de série:', errorData.numero_serie[0])
+            errorMsg = `Erro no número de série: ${errorData.numero_serie[0]}`
+          } else if (errorData.cpf && Array.isArray(errorData.cpf)) {
+            console.error('Erro de CPF:', errorData.cpf[0])
+            errorMsg = `Erro no CPF: ${errorData.cpf[0]}`
+          } else if (typeof errorData === 'string') {
+            errorMsg = errorData
+          } else if (errorData.detail) {
+            errorMsg = errorData.detail
+          }
+        }
+        
         error(errorMsg)
       }
     }
 
     const editarCliente = (cliente) => {
       editingId.value = cliente.id
-      form.value = { ...cliente }
+      form.value = { 
+        nome: cliente.nome,
+        cpf: cliente.cpf,
+        email: cliente.email,
+        telefone: cliente.telefone,
+        endereco: cliente.endereco,
+        cidade: cliente.cidade,
+        motos: []
+      }
+      
+      // Carregar motos do cliente
+      carregarMotosDoCliente(cliente.id)
       showForm.value = true
+    }
+
+    const carregarMotosDoCliente = async (clienteId) => {
+      try {
+        const res = await api.get('/motos/')
+        const todasMotos = res.data.results || res.data || []
+        form.value.motos = todasMotos
+          .filter(m => m.cliente === clienteId)
+          .map(m => ({
+            id: m.id,
+            marca: m.marca,
+            modelo: m.modelo,
+            placa: m.placa,
+            numero_serie: m.numero_serie,
+            ano: m.ano,
+            cor: m.cor,
+            cilindrada: m.cilindrada,
+            observacoes: m.observacoes
+          }))
+      } catch (err) {
+        console.error('Erro ao carregar motos do cliente:', err)
+      }
+    }
+
+    const adicionarMoto = () => {
+      form.value.motos.push({
+        id: null,
+        marca: '',
+        modelo: '',
+        placa: '',
+        numero_serie: '',
+        ano: new Date().getFullYear(),
+        cor: '',
+        cilindrada: '',
+        observacoes: ''
+      })
+    }
+
+    const removerMoto = (index) => {
+      form.value.motos.splice(index, 1)
     }
 
     const deletarCliente = async (id) => {
@@ -228,7 +395,8 @@ export default {
         email: '',
         telefone: '',
         endereco: '',
-        cidade: ''
+        cidade: '',
+        motos: []
       }
       editingId.value = null
       showForm.value = false
@@ -298,6 +466,7 @@ export default {
       clienteSelecionado,
       motosCliente,
       manutencoesCliente,
+      manutencoesCliente,
       salvarCliente,
       editarCliente,
       deletarCliente,
@@ -308,7 +477,11 @@ export default {
       getTipoServico,
       formatDate,
       formatCPF,
-      formatTelefone
+      formatTelefone,
+      validarPlaca,
+      adicionarMoto,
+      removerMoto,
+      carregarMotosDoCliente
     }
   }
 }
@@ -382,6 +555,103 @@ export default {
 .form-container h3 {
   margin-bottom: 1.5rem;
   color: #333;
+}
+
+.form-section {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.form-section h4 {
+  color: #667eea;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.section-header h4 {
+  margin: 0;
+}
+
+.btn-add-moto {
+  padding: 0.6rem 1rem;
+  background: #4facfe;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.btn-add-moto:hover {
+  background: #0080ff;
+}
+
+.motos-form-list {
+  display: grid;
+  gap: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.moto-form-item {
+  background: #f8f9fa;
+  padding: 1.5rem;
+  border-radius: 8px;
+  border-left: 4px solid #4facfe;
+}
+
+.moto-form-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.moto-form-grid input,
+.moto-form-grid textarea {
+  padding: 0.8rem;
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  font-family: inherit;
+  transition: border-color 0.3s;
+}
+
+.moto-form-grid input:focus,
+.moto-form-grid textarea:focus {
+  outline: none;
+  border-color: #4facfe;
+  box-shadow: 0 0 0 3px rgba(79, 172, 254, 0.1);
+}
+
+.btn-remove-moto {
+  padding: 0.6rem 1rem;
+  background: #f5576c;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s;
+}
+
+.btn-remove-moto:hover {
+  background: #e63946;
+}
+
+.no-motos {
+  color: #999;
+  text-align: center;
+  padding: 1rem;
+  font-style: italic;
 }
 
 .form-grid {

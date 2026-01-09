@@ -1,5 +1,8 @@
 from django.db import models
 from django.core.exceptions import ValidationError
+from django.contrib.auth.models import User
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 import re
 
 def validate_cpf(value):
@@ -43,3 +46,33 @@ class Cliente(models.Model):
 
     def __str__(self):
         return f'{self.nome} - {self.cpf}'
+
+class UserProfile(models.Model):
+    """Perfil do usuário com informações adicionais"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    idade = models.IntegerField(null=True, blank=True)
+    telefone = models.CharField(max_length=20, blank=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        verbose_name = 'Perfil do Usuário'
+        verbose_name_plural = 'Perfis dos Usuários'
+        ordering = ['-data_criacao']
+    
+    def __str__(self):
+        return f'{self.user.username}'
+
+
+@receiver(post_save, sender=User)
+def create_user_profile(sender, instance, created, **kwargs):
+    """Cria o perfil do usuário automaticamente"""
+    if created:
+        UserProfile.objects.get_or_create(user=instance)
+
+
+@receiver(post_save, sender=User)
+def save_user_profile(sender, instance, **kwargs):
+    """Salva o perfil do usuário"""
+    if hasattr(instance, 'profile'):
+        instance.profile.save()

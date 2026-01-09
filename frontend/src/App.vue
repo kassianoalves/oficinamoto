@@ -7,12 +7,13 @@
       <ul class="nav-menu">
         <li v-if="isAuthenticated"><router-link to="/">Home</router-link></li>
         <li v-if="isAuthenticated"><router-link to="/clientes">Clientes</router-link></li>
-        <li v-if="isAuthenticated"><router-link to="/motos">Motos</router-link></li>
         <li v-if="isAuthenticated"><router-link to="/manutencoes">Agendamento</router-link></li>
         <li v-if="!isAuthenticated"><router-link to="/login">🔐 Login</router-link></li>
         <li v-if="!isAuthenticated"><router-link to="/register">📝 Cadastrar</router-link></li>
         <li v-if="isAuthenticated" class="user-menu">
-          <span>👤 {{ username }}</span>
+          <button @click="openProfileModal" class="btn-user-profile">
+            👤 {{ displayName }}
+          </button>
           <button @click="logout" class="btn-logout">Sair</button>
         </li>
       </ul>
@@ -20,24 +21,41 @@
     <main class="main-content">
       <router-view @login="checkAuth" />
     </main>
+    <ProfileModal 
+      :show="showProfile" 
+      :userData="userData"
+      @close="showProfile = false"
+      @update="handleProfileUpdate"
+    />
     <ToastNotification />
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import ToastNotification from '@/components/ToastNotification.vue'
+import ProfileModal from '@/components/ProfileModal.vue'
 
 export default {
   name: 'App',
   components: {
-    ToastNotification
+    ToastNotification,
+    ProfileModal
   },
   setup() {
     const router = useRouter()
     const isAuthenticated = ref(false)
     const username = ref('')
+    const showProfile = ref(false)
+    const userData = ref({})
+
+    const displayName = computed(() => {
+      if (userData.value.first_name && userData.value.last_name) {
+        return `${userData.value.first_name} ${userData.value.last_name}`
+      }
+      return username.value
+    })
 
     const checkAuth = () => {
       const token = localStorage.getItem('authToken')
@@ -47,12 +65,21 @@ export default {
       
       if (user) {
         try {
-          const userData = JSON.parse(user)
-          username.value = userData.username || userData.email
+          userData.value = JSON.parse(user)
+          username.value = userData.value.username || userData.value.email
         } catch (e) {
           username.value = ''
         }
       }
+    }
+
+    const openProfileModal = () => {
+      showProfile.value = true
+    }
+
+    const handleProfileUpdate = (updatedUser) => {
+      userData.value = updatedUser
+      username.value = updatedUser.username || updatedUser.email
     }
 
     const logout = () => {
@@ -60,12 +87,12 @@ export default {
       localStorage.removeItem('user')
       isAuthenticated.value = false
       username.value = ''
+      userData.value = {}
       router.push('/login')
     }
 
     onMounted(() => {
       checkAuth()
-      // Verificar autenticação a cada mudança de rota
       router.afterEach(() => {
         checkAuth()
       })
@@ -74,6 +101,12 @@ export default {
     return {
       isAuthenticated,
       username,
+      displayName,
+      userData,
+      showProfile,
+      checkAuth,
+      openProfileModal,
+      handleProfileUpdate,
       logout
     }
   }
@@ -140,8 +173,22 @@ body {
   gap: 1rem;
 }
 
-.user-menu span {
-  font-weight: 500;
+.btn-user-profile {
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: all 0.3s ease;
+  font-size: 0.95rem;
+}
+
+.btn-user-profile:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
 }
 
 .btn-logout {
@@ -154,7 +201,6 @@ body {
   font-weight: 500;
   transition: background 0.3s;
 }
-
 .btn-logout:hover {
   background: rgba(255, 255, 255, 0.3);
 }

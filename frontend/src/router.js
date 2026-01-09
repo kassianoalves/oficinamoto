@@ -1,7 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import ClientesView from '@/views/ClientesView.vue'
-import MotosView from '@/views/MotosView.vue'
 import ManutencaoView from '@/views/ManutencaoView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
@@ -36,12 +35,6 @@ const routes = [
     path: '/clientes',
     name: 'Clientes',
     component: ClientesView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/motos',
-    name: 'Motos',
-    component: MotosView,
     meta: { requiresAuth: true }
   },
   {

@@ -152,6 +152,72 @@ class ResetPasswordSerializer(serializers.Serializer):
 
 
 class UserSerializer(serializers.ModelSerializer):
+    idade = serializers.SerializerMethodField()
+    telefone = serializers.SerializerMethodField()
+    
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+        fields = ['id', 'username', 'email', 'first_name', 'last_name', 'idade', 'telefone']
+    
+    def get_idade(self, obj):
+        try:
+            return obj.profile.idade
+        except:
+            return None
+    
+    def get_telefone(self, obj):
+        try:
+            return obj.profile.telefone
+        except:
+            return ''
+
+
+class UpdateProfileSerializer(serializers.Serializer):
+    first_name = serializers.CharField(required=False, max_length=150, allow_blank=True)
+    last_name = serializers.CharField(required=False, max_length=150, allow_blank=True)
+    email = serializers.EmailField(required=False, allow_blank=True)
+    idade = serializers.IntegerField(required=False, min_value=1, max_value=150, allow_null=True)
+    telefone = serializers.CharField(required=False, max_length=20, allow_blank=True)
+    
+    def validate_email(self, value):
+        if not value:  # Se está vazio, não valida
+            return value
+        user = self.context.get('request').user
+        if User.objects.filter(email=value).exclude(pk=user.pk).exists():
+            raise serializers.ValidationError('Este email já está em uso')
+        return value
+    
+    def update(self, instance, validated_data):
+        try:
+            idade = validated_data.pop('idade', None)
+            telefone = validated_data.pop('telefone', None)
+            
+            # Atualizar campos do usuário
+            if 'first_name' in validated_data:
+                instance.first_name = validated_data.get('first_name', '')
+            if 'last_name' in validated_data:
+                instance.last_name = validated_data.get('last_name', '')
+            if 'email' in validated_data:
+                instance.email = validated_data.get('email', '')
+            
+            instance.save()
+            
+            # Atualizar profile
+            from .models import UserProfile
+            
+            try:
+                profile = instance.profile
+            except UserProfile.DoesNotExist:
+                # Se não existir profile, cria um
+                profile = UserProfile.objects.create(user=instance)
+            
+            if idade is not None:
+                profile.idade = idade
+            if telefone is not None:
+                profile.telefone = telefone
+            
+            profile.save()
+            
+            return instance
+        except Exception as e:
+            raise serializers.ValidationError(f'Erro ao atualizar perfil: {str(e)}')

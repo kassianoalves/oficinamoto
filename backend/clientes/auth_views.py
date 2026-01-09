@@ -5,7 +5,7 @@ from rest_framework.authtoken.models import Token
 from django.contrib.auth.models import User
 from .auth_serializers import (
     RegisterSerializer, LoginSerializer, ForgotPasswordSerializer,
-    ResetPasswordSerializer, UserSerializer
+    ResetPasswordSerializer, UserSerializer, UpdateProfileSerializer
 )
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
@@ -77,6 +77,18 @@ class UserDetailView(APIView):
     def get(self, request):
         return Response(UserSerializer(request.user).data, status=status.HTTP_200_OK)
 
+    def put(self, request):
+        serializer = UpdateProfileSerializer(
+            request.user,
+            data=request.data,
+            partial=True,
+            context={'request': request}
+        )
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response(UserSerializer(user).data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class LogoutView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -84,4 +96,3 @@ class LogoutView(APIView):
 
     def post(self, request):
         request.user.auth_token.delete()
-        return Response({'status': 'Logout realizado com sucesso'}, status=status.HTTP_200_OK)
