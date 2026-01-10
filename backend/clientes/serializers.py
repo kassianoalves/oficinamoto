@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Cliente, ProdutoLoja, ManualsBase
+from .models import Cliente, ProdutoLoja
 from motos.models import Moto
 
 class ClienteSerializer(serializers.ModelSerializer):
@@ -19,10 +19,3 @@ class ProdutoLojaSerializer(serializers.ModelSerializer):
         """Define automaticamente o user como o usuário logado"""
         validated_data['user'] = self.context['request'].user
         return super().create(validated_data)
-
-
-class ManualsBaseSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = ManualsBase
-        fields = ['id', 'marca', 'modelo', 'ano', 'tipo_reparo', 'descricao', 'arquivo_pdf', 'url_externo', 'dificuldade', 'tempo_estimado', 'ferramentas_necessarias', 'ativo']
-        read_only_fields = ['id']

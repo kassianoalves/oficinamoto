@@ -3,8 +3,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-from .models import Cliente, ProdutoLoja, ManualsBase
-from .serializers import ClienteSerializer, ProdutoLojaSerializer, ManualsBaseSerializer
+from .models import Cliente, ProdutoLoja
+from .serializers import ClienteSerializer, ProdutoLojaSerializer
 from .group_permissions import HasGroupPermission, IsAdminGroup
 
 class ClienteViewSet(viewsets.ModelViewSet):
@@ -94,39 +94,3 @@ class ProdutoLojaViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_403_FORBIDDEN
             )
         instance.delete()
-
-
-class ManualsBaseViewSet(viewsets.ReadOnlyModelViewSet):
-    """ViewSet apenas leitura para Base de Manuais (disponível para todos)"""
-    queryset = ManualsBase.objects.filter(ativo=True)
-    serializer_class = ManualsBaseSerializer
-    authentication_classes = [TokenAuthentication]
-    permission_classes = [IsAuthenticated]
-
-    def get_permissions(self):
-        """Apenas admin pode criar/editar/deletar manuais"""
-        if self.action in ['create', 'update', 'partial_update', 'destroy']:
-            self.permission_classes = [IsAuthenticated, IsAdminGroup]
-        return super().get_permissions()
-
-    @action(detail=False, methods=['get'])
-    def por_marca(self, request):
-        """Filtro por marca de moto"""
-        marca = request.query_params.get('marca', None)
-        if marca:
-            queryset = self.get_queryset().filter(marca=marca)
-        else:
-            queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-    @action(detail=False, methods=['get'])
-    def por_tipo_reparo(self, request):
-        """Filtro por tipo de reparo"""
-        tipo = request.query_params.get('tipo', None)
-        if tipo:
-            queryset = self.get_queryset().filter(tipo_reparo=tipo)
-        else:
-            queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)

@@ -35,7 +35,6 @@
               <!-- Submenu Enterprise -->
               <li v-if="isEnterprise" class="dropdown-separator"></li>
               <li v-if="isEnterprise"><router-link to="/fornecedores" class="dropdown-item enterprise">🤝 Fornecedores</router-link></li>
-              <li v-if="isEnterprise"><router-link to="/manuais" class="dropdown-item enterprise">📚 Manuais</router-link></li>
             </ul>
           </li>
         </ul>
@@ -589,7 +588,7 @@ body {
 
 .btn-user-profile {
   background: rgba(195, 123, 236, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
+  border: 2px solid rgba(100, 0, 158, 0);
   color: white;
   padding: 0.65rem 1.1rem;
   border-radius: 8px;
@@ -604,8 +603,8 @@ body {
 }
 
 .user-avatar {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
   object-fit: cover;
   border: 2px solid rgba(255,255,255,0.6);
@@ -644,9 +643,8 @@ body {
 }
 
 .btn-user-profile:hover {
-  background: rgba(255, 255, 255, 0.25);
-  border-color: rgba(183, 0, 255, 0.5);
-  transform: translateY(-2px);
+  background: rgba(18, 1, 27, 0.3);
+  transform: translateY(-3px);
 }
 
 .badge {
@@ -664,8 +662,8 @@ body {
 }
 
 .badge-enterprise {
-  background: linear-gradient(135deg, #FF1493, #FF69B4);
-  color: white;
+  background: linear-gradient(135deg, #ffd700 0%, #ff8c00 100%);
+  color: rgb(255, 255, 255);
 }
 
 .badge-free {

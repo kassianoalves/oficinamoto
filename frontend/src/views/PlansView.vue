@@ -223,11 +223,35 @@ export default {
       try {
         if (planName === 'free') {
           success('Você está usando o plano Gratuito')
-        } else if (planName === 'pro') {
+          return
+        }
+
+        if (planName === 'pro') {
           const res = await api.post('/subscription/upgrade-pro/')
-          window.location.href = res.data.payment_url
-        } else if (planName === 'enterprise') {
-          success('Em breve! Contacte-nos para o plano Enterprise')
+          const paymentUrl = res?.data?.payment_url
+
+          // Evita redirecionar para página vazia quando a API não devolve checkout
+          if (!paymentUrl) {
+            success('Upgrade PRO registrado. Em breve entraremos em contato.')
+            return
+          }
+
+          window.location.href = paymentUrl
+          return
+        }
+
+        if (planName === 'enterprise') {
+          // Backend ainda não tem endpoint dedicado; reutiliza o upgrade-pro para gerar checkout
+          const res = await api.post('/subscription/upgrade-pro/')
+          const paymentUrl = res?.data?.payment_url
+
+          if (!paymentUrl) {
+            success('Pedido Enterprise registrado. Em breve entraremos em contato.')
+            return
+          }
+
+          window.location.href = paymentUrl
+          return
         }
       } catch (err) {
         error('Erro ao processar plano')

@@ -4,7 +4,7 @@ from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
 
-from clientes.views import ClienteViewSet, ProdutoLojaViewSet, ManualsBaseViewSet
+from clientes.views import ClienteViewSet, ProdutoLojaViewSet
 from clientes.auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView, UserDetailView, LogoutView
 from motos.views import MotoViewSet, PecaViewSet
 from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet
@@ -18,7 +18,6 @@ router.register(r'agendamentos', AgendamentoViewSet, basename='agendamento')
 router.register(r'lembretes', LembreteViewSet, basename='lembrete')
 router.register(r'pontos-fidelidade', PontosFidelidadeViewSet, basename='pontos-fidelidade')
 router.register(r'produtos-loja', ProdutoLojaViewSet, basename='produto-loja')
-router.register(r'manuais', ManualsBaseViewSet, basename='manual')
 
 
 # Rotas de autenticação

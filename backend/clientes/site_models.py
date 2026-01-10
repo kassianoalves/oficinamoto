@@ -12,8 +12,8 @@ class SiteSettings(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        verbose_name = 'Configuração do Site'
-        verbose_name_plural = 'Configurações do Site'
+        verbose_name = 'Site'
+        verbose_name_plural = 'Site'
 
     def save(self, *args, **kwargs):
         # Garantir que só existe uma instância (singleton)

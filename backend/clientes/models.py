@@ -173,12 +173,10 @@ class Plan(models.Model):
     has_plano_fidelidade = models.BooleanField(default=False)
     has_agendamentos_prioritarios = models.BooleanField(default=False)
     has_loja = models.BooleanField(default=False, help_text='Loja para vender produtos')
-    has_manuais = models.BooleanField(default=False, help_text='Banco de dados com manuais de reparo')
     has_plano_fidelidade = models.BooleanField(default=False)
     has_agendamentos_prioritarios = models.BooleanField(default=False)
     
     class Meta:
-        verbose_name = 'Plano'
         verbose_name_plural = 'Planos'
     
     def __str__(self):
@@ -203,7 +201,6 @@ class Subscription(models.Model):
     payment_method = models.CharField(max_length=50, blank=True)
     
     class Meta:
-        verbose_name = 'Assinatura'
         verbose_name_plural = 'Assinaturas'
     
     def is_active(self):
@@ -233,7 +230,6 @@ class Fornecedor(models.Model):
     
     class Meta:
         verbose_name = 'Fornecedor'
-        verbose_name_plural = 'Fornecedores'
         ordering = ['-data_criacao']
     
     def __str__(self):
@@ -254,38 +250,8 @@ class ProdutoLoja(models.Model):
     data_criacao = models.DateTimeField(auto_now_add=True)
     
     class Meta:
-        verbose_name = 'Produto da Loja'
-        verbose_name_plural = 'Produtos da Loja'
+        verbose_name = 'Loja'
         ordering = ['-data_criacao']
     
     def __str__(self):
         return f"{self.nome} (R$ {self.preco})"
-
-
-class ManualsBase(models.Model):
-    """Banco de dados com manuais de reparo (Enterprise)"""
-    marca = models.CharField(max_length=100)
-    modelo = models.CharField(max_length=100)
-    ano = models.IntegerField()
-    tipo_reparo = models.CharField(max_length=255)  # Troca de óleo, Reparo de freios, etc
-    descricao = models.TextField()
-    arquivo_pdf = models.FileField(upload_to='manuais/', blank=True, null=True)
-    url_externo = models.URLField(blank=True, null=True)
-    dificuldade = models.CharField(
-        max_length=20,
-        choices=[('facil', 'Fácil'), ('medio', 'Médio'), ('dificil', 'Difícil')],
-        default='medio'
-    )
-    tempo_estimado = models.CharField(max_length=100, help_text='Ex: 30 minutos')
-    ferramentas_necessarias = models.TextField(help_text='Lista de ferramentas necessárias')
-    data_criacao = models.DateTimeField(auto_now_add=True)
-    ativo = models.BooleanField(default=True)
-    
-    class Meta:
-        verbose_name = 'Manual de Reparo'
-        verbose_name_plural = 'Manuais de Reparo'
-        ordering = ['-data_criacao']
-        unique_together = ('marca', 'modelo', 'ano', 'tipo_reparo')
-    
-    def __str__(self):
-        return f"{self.marca} {self.modelo} ({self.ano}) - {self.tipo_reparo}"

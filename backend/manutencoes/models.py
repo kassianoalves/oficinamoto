@@ -69,7 +69,6 @@ class Lembrete(models.Model):
     erro = models.TextField(blank=True)
     
     class Meta:
-        ordering = ['data_envio_programada']
         verbose_name = 'Lembrete'
         verbose_name_plural = 'Lembretes'
     
@@ -86,7 +85,6 @@ class PontosFidelidade(models.Model):
     data_atualizacao = models.DateTimeField(auto_now=True)
     
     class Meta:
-        verbose_name = 'Pontos de Fidelidade'
         verbose_name_plural = 'Pontos de Fidelidade'
     
     def __str__(self):

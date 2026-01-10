@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Cliente, UserProfile, Plan, Subscription, Fornecedor, ProdutoLoja, ManualsBase
+from .models import Cliente, UserProfile, Plan, Subscription, Fornecedor, ProdutoLoja
 from .site_models import SiteSettings
 
 @admin.register(Cliente)
@@ -36,7 +36,7 @@ class PlanAdmin(admin.ModelAdmin):
                       'has_ia_diagnostico', 'has_plano_fidelidade', 'has_agendamentos_prioritarios')
         }),
         ('Recursos Enterprise', {
-            'fields': ('has_loja', 'has_manuais')
+            'fields': ('has_loja',)
         }),
     )
 
@@ -64,26 +64,6 @@ class ProdutoLojaAdmin(admin.ModelAdmin):
     search_fields = ['nome', 'sku', 'user__username']
     readonly_fields = ['data_criacao']
     list_editable = ['estoque', 'ativo']
-
-
-@admin.register(ManualsBase)
-class ManualsBaseAdmin(admin.ModelAdmin):
-    list_display = ['tipo_reparo', 'marca', 'modelo', 'ano', 'dificuldade', 'ativo']
-    list_filter = ['marca', 'dificuldade', 'ativo', 'data_criacao']
-    search_fields = ['tipo_reparo', 'marca', 'modelo']
-    readonly_fields = ['data_criacao']
-    list_editable = ['ativo']
-    fieldsets = (
-        ('Informações do Manual', {
-            'fields': ('marca', 'modelo', 'ano', 'tipo_reparo', 'descricao')
-        }),
-        ('Conteúdo', {
-            'fields': ('arquivo_pdf', 'url_externo', 'dificuldade', 'tempo_estimado')
-        }),
-        ('Detalhes', {
-            'fields': ('ferramentas_necessarias', 'ativo', 'data_criacao')
-        }),
-    )
 
 
 @admin.register(SiteSettings)
