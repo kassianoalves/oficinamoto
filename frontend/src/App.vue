@@ -1,8 +1,13 @@
 <template>
   <div id="app" class="app-container">
     <nav v-if="!isAuthPage" class="navbar">
+      <!-- Botão Hambúrguer Mobile -->
+      <button class="hamburger-btn" @click="toggleMobileMenu" :class="{ active: showMobileMenu }">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
       <div class="logo">
-        <!-- <img :src="logoImage" alt="Logo" class="logo-img" /> -->
         <img v-if="siteLogo" :src="siteLogo" alt="Logo" class="logo-img" />
         <div class="logo-text">
           <button v-if="isAdmin" @click="openLogoModal" class="btn-edit-logo" title="Editar logo e nome do site">
@@ -11,7 +16,7 @@
           <h1>{{ siteName }}</h1>
         </div>
       </div>
-      <div class="nav-sections">
+      <div class="nav-sections desktop-menu">
         <ul class="nav-menu">
           <!-- Menu Base (todos os usuários autenticados) -->
           <li v-if="isAuthenticated"><router-link to="/">🏠 Home</router-link></li>
@@ -21,6 +26,8 @@
           <li v-if="isAuthenticated"><router-link to="/manutencoes">📅 Agendamento</router-link></li>
       
           <!-- Menu PRO (PRO e Enterprise) -->
+          <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/pecas">📦 Peças</router-link></li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/loja">🛒 Loja</router-link></li>
           
@@ -50,6 +57,91 @@
           </template>
           </div>
         </div>
+      </div>
+      <!-- Sidebar Mobile Menu -->
+      <div class="mobile-sidebar-overlay" :class="{ active: showMobileMenu }" @click="closeMobileMenu"></div>
+      <div class="mobile-sidebar" :class="{ active: showMobileMenu }">
+        <div class="sidebar-header">
+          <div class="sidebar-user">
+            <template v-if="isAuthenticated">
+              <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" class="sidebar-avatar" />
+              <div class="sidebar-user-info">
+                <span class="sidebar-username">{{ displayName }}</span>
+                <span v-if="isPro" class="sidebar-badge badge-pro">PRO</span>
+                <span v-if="isEnterprise" class="sidebar-badge badge-enterprise">ENTERPRISE</span>
+                <span v-if="isFree" class="sidebar-badge badge-free">GRÁTIS</span>
+              </div>
+            </template>
+            <template v-else>
+              <span class="sidebar-guest">Bem-vindo!</span>
+            </template>
+          </div>
+          <button class="sidebar-close" @click="closeMobileMenu">✕</button>
+        </div>
+        
+        <nav class="sidebar-nav">
+          <template v-if="isAuthenticated">
+            <router-link to="/" class="sidebar-link" @click="closeMobileMenu">
+              <span class="sidebar-icon">🏠</span>
+              Home
+            </router-link>
+            <router-link to="/clientes" class="sidebar-link" @click="closeMobileMenu">
+              <span class="sidebar-icon">👥</span>
+              Clientes
+            </router-link>
+            <router-link to="/manutencoes" class="sidebar-link" @click="closeMobileMenu">
+              <span class="sidebar-icon">📅</span>
+              Agendamento
+            </router-link>
+            
+            <div v-if="isPro || isEnterprise" class="sidebar-divider"></div>
+            
+            <router-link v-if="isPro || isEnterprise" to="/pecas" class="sidebar-link sidebar-link-pro" @click="closeMobileMenu">
+              <span class="sidebar-icon">📦</span>
+              Peças
+              <span class="sidebar-tag">PRO</span>
+            </router-link>
+            
+            <router-link v-if="isPro || isEnterprise" to="/loja" class="sidebar-link sidebar-link-pro" @click="closeMobileMenu">
+              <span class="sidebar-icon">🛒</span>
+              Loja
+              <span class="sidebar-tag">PRO</span>
+            </router-link>
+            
+            <router-link v-if="isEnterprise" to="/fornecedores" class="sidebar-link sidebar-link-enterprise" @click="closeMobileMenu">
+              <span class="sidebar-icon">🤝</span>
+              Fornecedores
+              <span class="sidebar-tag">ENTERPRISE</span>
+            </router-link>
+            
+            <div class="sidebar-divider"></div>
+            
+            <router-link to="/planos" class="sidebar-link sidebar-link-plans" @click="closeMobileMenu">
+              <span class="sidebar-icon">💎</span>
+              Planos
+            </router-link>
+            
+            <button @click="openProfileModal; closeMobileMenu()" class="sidebar-link sidebar-button">
+              <span class="sidebar-icon">⚙️</span>
+              Perfil
+            </button>
+            
+            <button @click="logout" class="sidebar-link sidebar-button sidebar-logout">
+              <span class="sidebar-icon">🚪</span>
+              Sair
+            </button>
+          </template>
+          <template v-else>
+            <router-link to="/login" class="sidebar-link" @click="closeMobileMenu">
+              <span class="sidebar-icon">🔐</span>
+              Login
+            </router-link>
+            <router-link to="/register" class="sidebar-link sidebar-link-primary" @click="closeMobileMenu">
+              <span class="sidebar-icon">📝</span>
+              Cadastrar
+            </router-link>
+          </template>
+        </nav>
       </div>
     </nav>
     <main :class="['main-content', { 'main-auth': isAuthPage }]">
@@ -102,6 +194,7 @@ export default {
     const username = ref('')
     const showProfile = ref(false)
     const userData = ref({})
+    const showMobileMenu = ref(false)
     // Estado de assinatura centralizado no composable
     const { userSubscription, isPro, isEnterprise, isFree, loadSubscription } = useSubscription()
     const showLogoModal = ref(false)
@@ -218,6 +311,7 @@ export default {
     }
 
     const logout = () => {
+      closeMobileMenu()
       localStorage.removeItem('authToken')
       localStorage.removeItem('user')
       isAuthenticated.value = false
@@ -226,6 +320,20 @@ export default {
       userSubscription.value = null
       showProfile.value = false
       router.push('/login')
+    }
+
+    const toggleMobileMenu = () => {
+      showMobileMenu.value = !showMobileMenu.value
+      if (showMobileMenu.value) {
+        document.body.style.overflow = 'hidden'
+      } else {
+        document.body.style.overflow = ''
+      }
+    }
+
+    const closeMobileMenu = () => {
+      showMobileMenu.value = false
+      document.body.style.overflow = ''
     }
 
     // Watcher para monitorar mudanças no localStorage (para atualizar menu após login)
@@ -269,6 +377,9 @@ export default {
       isAdmin,
       openLogoModal,
       handleLogoUpdate
+      , showMobileMenu,
+      toggleMobileMenu,
+      closeMobileMenu
     }
   }
 }
@@ -354,6 +465,237 @@ body {
   flex: 1;
   position: relative;
   z-index: 1;
+}
+
+/* ========== MENU HAMBÚRGUER MOBILE ========== */
+.hamburger-btn {
+  display: none;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 32px;
+  height: 28px;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  z-index: 1001;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn span {
+  width: 100%;
+  height: 3px;
+  background: white;
+  border-radius: 3px;
+  transition: all 0.3s ease;
+}
+
+.hamburger-btn.active span:nth-child(1) {
+  transform: rotate(45deg) translate(8px, 8px);
+}
+
+.hamburger-btn.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger-btn.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -7px);
+}
+
+.mobile-sidebar-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-sidebar-overlay.active {
+  display: block;
+  opacity: 1;
+}
+
+.mobile-sidebar {
+  position: fixed;
+  top: 0;
+  left: -320px;
+  width: 300px;
+  height: 100vh;
+  background: linear-gradient(180deg, #667eea 0%, #764ba2 100%);
+  box-shadow: 4px 0 20px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+  display: block;
+}
+
+.mobile-sidebar.active {
+  left: 0;
+}
+
+.sidebar-header {
+  padding: 1.5rem 1rem;
+  background: rgba(0, 0, 0, 0.15);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-user {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+}
+
+.sidebar-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+}
+
+.sidebar-user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.sidebar-username {
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.sidebar-guest {
+  color: white;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.sidebar-badge {
+  font-size: 0.7rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 8px;
+  font-weight: 700;
+  width: fit-content;
+}
+
+.sidebar-close {
+  background: transparent;
+  border: none;
+  color: white;
+  font-size: 1.8rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  transition: all 0.2s;
+}
+
+.sidebar-close:hover {
+  transform: rotate(90deg);
+  opacity: 0.7;
+}
+
+.sidebar-nav {
+  padding: 1rem 0;
+}
+
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  color: white;
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  border-left: 4px solid transparent;
+  background: transparent;
+  width: 100%;
+  text-align: left;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  cursor: pointer;
+}
+
+.sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-left-color: white;
+  padding-left: 1.75rem;
+}
+
+.sidebar-link.router-link-active {
+  background: rgba(255, 255, 255, 0.15);
+  border-left-color: white;
+  font-weight: 600;
+}
+
+.sidebar-icon {
+  font-size: 1.3rem;
+  min-width: 24px;
+}
+
+.sidebar-tag {
+  margin-left: auto;
+  font-size: 0.65rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.2);
+  font-weight: 700;
+}
+
+.sidebar-link-pro:hover {
+  background: rgba(168, 85, 247, 0.2);
+}
+
+.sidebar-link-enterprise:hover {
+  background: rgba(255, 215, 0, 0.15);
+}
+
+.sidebar-link-plans {
+  background: rgba(255, 105, 180, 0.1);
+}
+
+.sidebar-link-plans:hover {
+  background: rgba(255, 105, 180, 0.2);
+}
+
+.sidebar-button {
+  font-family: inherit;
+}
+
+.sidebar-logout {
+  color: #ffcccc;
+}
+
+.sidebar-logout:hover {
+  background: rgba(255, 76, 76, 0.2);
+  border-left-color: #ff4c4c;
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: rgba(255, 255, 255, 0.15);
+  margin: 0.75rem 1rem;
+}
+
+.sidebar-link-primary {
+  background: rgba(255, 179, 71, 0.2);
+}
+
+.sidebar-link-primary:hover {
+  background: rgba(255, 159, 28, 0.3);
 }
 
 .nav-menu {
@@ -775,24 +1117,71 @@ body {
   transform: translateY(-10px);
 }
 
-/* Tablet - 1024px e abaixo */
-@media (max-width: 1024px) {
+/* Large Desktop - 1366px e abaixo */
+@media (max-width: 1366px) {
   .navbar {
-    padding: 1rem;
-    gap: 1rem;
+    padding: 0.9rem 1.2rem;
   }
 
   .nav-menu {
-    gap: 0.4rem;
+    gap: 0.35rem;
   }
 
   .nav-menu a {
-    padding: 0.5rem 0.7rem;
-    font-size: 0.9rem;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.92rem;
+  }
+
+  .menu-separator {
+    padding: 0 0.15rem;
+  }
+
+  .nav-right {
+    gap: 0.75rem;
+  }
+
+  .btn-user-profile {
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+}
+
+/* Tablet - 1024px e abaixo */
+@media (max-width: 1024px) {
+  .navbar {
+    padding: 0.85rem 1rem;
+    gap: 0.75rem;
+  }
+
+  .nav-menu {
+    gap: 0.3rem;
+  }
+
+  .nav-menu a {
+    padding: 0.45rem 0.65rem;
+    font-size: 0.88rem;
+  }
+
+  .menu-separator {
+    display: none;
   }
 
   .logo h1 {
     font-size: 1.4rem;
+  }
+
+  .nav-right {
+    gap: 0.6rem;
+  }
+
+  .btn-user-profile {
+    padding: 0.55rem 0.9rem;
+    font-size: 0.9rem;
+  }
+
+  .menu-plans {
+    padding: 0.45rem 0.75rem;
+    font-size: 0.88rem;
   }
 
   .main-content {
@@ -817,30 +1206,39 @@ body {
   }
 
   .navbar {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
     gap: 0.5rem;
-    padding: 0.75rem;
+    padding: 0.5rem 0.75rem;
+    padding-top: calc(0.5rem + env(safe-area-inset-top, 0px));
     border-bottom: 2px solid #f0f0f0;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
+    position: relative;
   }
 
   .logo {
-    width: 100%;
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
     display: flex;
     align-items: center;
+    justify-content: center;
     gap: 0.5rem;
   }
 
   .logo-text {
     display: flex;
+    flex-direction: column;
     align-items: center;
-    gap: 0.25rem;
+    text-align: center;
+    gap: 0.15rem;
   }
 
   .logo h1 {
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     margin: 0;
+    text-align: center;
   }
 
   .logo-img {
@@ -848,12 +1246,8 @@ body {
     height: 32px !important;
   }
 
-  .nav-sections {
-    width: 100%;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.5rem;
-    order: 3;
+  .desktop-menu {
+    display: none !important;
   }
 
   .nav-menu {
@@ -863,6 +1257,7 @@ body {
     list-style: none;
     padding: 0;
     margin: 0;
+    justify-content: center;
   }
 
   .nav-menu li {
@@ -882,10 +1277,21 @@ body {
   .nav-right {
     width: 100%;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
     gap: 0.5rem;
     order: 2;
+  }
+
+  .hamburger-btn {
+    display: flex;
+    order: -1;
+    margin-right: auto;
+    z-index: 1;
+  }
+
+  .mobile-sidebar {
+    display: block;
   }
 
   .menu-plans {
@@ -937,7 +1343,7 @@ body {
 
   .main-content {
     flex: 1;
-    padding: 1rem;
+    padding: 0;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -945,6 +1351,10 @@ body {
 
 /* Smartphone pequeno - 480px e abaixo */
 @media (max-width: 480px) {
+  .main-content {
+    padding: 0;
+  }
+
   .navbar {
     padding: 0.5rem;
   }
@@ -1002,6 +1412,32 @@ body {
 
   .menu-separator {
     display: none;
+  }
+}
+
+/* Medium screens - 1280px e abaixo */
+@media (max-width: 1280px) {
+  .navbar {
+    padding: 0.8rem 1rem;
+    gap: 0.75rem;
+  }
+  .nav-sections {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+  }
+  .nav-menu {
+    gap: 0.4rem;
+  }
+  .nav-menu a {
+    padding: 0.45rem 0.7rem;
+    font-size: 0.9rem;
+  }
+  .menu-separator {
+    display: none;
+  }
+  .nav-right {
+    gap: 0.6rem;
+    flex-wrap: wrap;
   }
 }
 </style>

@@ -437,12 +437,166 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .header h1 {
+    font-size: 1.8rem;
+  }
+  
+  .subtitle {
+    font-size: 0.95rem;
+  }
+  
+  .badge-pro {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.8rem;
+  }
+  
+  .actions {
+    justify-content: center;
+    margin-bottom: 1.5rem;
+  }
+  
+  .btn-add {
+    width: 100%;
+    padding: 0.9rem 1rem;
+    font-size: 0.95rem;
+  }
+  
   .fornecedores-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+  
+  .fornecedor-card {
+    padding: 1rem;
+  }
+  
+  .card-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+  }
+  
+  .card-header h3 {
+    font-size: 1.1rem;
+    word-break: break-word;
+  }
+  
+  .card-actions {
+    align-self: flex-end;
+  }
+  
+  .card-body p {
+    font-size: 0.9rem;
+    word-break: break-word;
+  }
+  
+  .modal-content {
+    width: 95%;
+    padding: 1.5rem;
+    margin: 1rem;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.25rem;
   }
   
   .form-row {
     grid-template-columns: 1fr;
+  }
+  
+  .form-group input,
+  .form-group textarea {
+    font-size: 0.95rem;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+  
+  .btn-cancel,
+  .btn-save {
+    width: 100%;
+    padding: 0.9rem;
+  }
+}
+
+/* iPhone 14 e dispositivos similares (390px) */
+@media (max-width: 430px) {
+  .fornecedores-view {
+    padding: 0.75rem;
+  }
+  
+  .header {
+    margin-bottom: 1.5rem;
+  }
+  
+  .header h1 {
+    font-size: 1.5rem;
+    line-height: 1.3;
+  }
+  
+  .subtitle {
+    font-size: 0.85rem;
+  }
+  
+  .fornecedor-card {
+    padding: 0.875rem;
+  }
+  
+  .card-header h3 {
+    font-size: 1rem;
+  }
+  
+  .card-body p {
+    font-size: 0.85rem;
+    margin: 0.5rem 0;
+  }
+  
+  .card-body p strong {
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+  
+  .badge-especialidade {
+    font-size: 0.75rem;
+    padding: 0.15rem 0.5rem;
+    display: inline-block;
+    margin-top: 0.25rem;
+  }
+  
+  .btn-edit,
+  .btn-delete {
+    font-size: 1.1rem;
+    padding: 0.4rem;
+  }
+  
+  .modal-content {
+    padding: 1rem;
+    width: 98%;
+    max-height: 95vh;
+  }
+  
+  .modal-header {
+    margin-bottom: 1rem;
+  }
+  
+  .modal-header h2 {
+    font-size: 1.1rem;
+  }
+  
+  .btn-close {
+    font-size: 1.3rem;
+  }
+  
+  .form-group label {
+    font-size: 0.85rem;
+  }
+  
+  .form-group input,
+  .form-group textarea {
+    padding: 0.7rem;
+    font-size: 0.9rem;
   }
 }
 </style>

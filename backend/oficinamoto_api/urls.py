@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 from clientes.views import ClienteViewSet, ProdutoLojaViewSet
 from clientes.auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView, UserDetailView, LogoutView
 from motos.views import MotoViewSet, PecaViewSet
-from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet
+from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet, PecaViewSet as PecaManuViewSet, ItemAgendamentoViewSet
 
 # View para retornar a URL da API dinamicamente
 @api_view(['GET'])
@@ -46,7 +46,8 @@ def get_api_config(request):
 router = DefaultRouter()
 router.register(r'clientes', ClienteViewSet, basename='cliente')
 router.register(r'motos', MotoViewSet, basename='moto')
-router.register(r'pecas', PecaViewSet, basename='peca')
+router.register(r'pecas', PecaManuViewSet, basename='peca')
+router.register(r'itens-agendamento', ItemAgendamentoViewSet, basename='item-agendamento')
 router.register(r'manutencoes', ManutencaoViewSet, basename='manutencao')
 router.register(r'agendamentos', AgendamentoViewSet, basename='agendamento')
 router.register(r'lembretes', LembreteViewSet, basename='lembrete')

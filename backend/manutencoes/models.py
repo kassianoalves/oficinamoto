@@ -1,6 +1,47 @@
 from django.db import models
 from motos.models import Moto
 
+class Peca(models.Model):
+    """Inventário de peças disponíveis"""
+    nome = models.CharField(max_length=255)
+    descricao = models.TextField(blank=True)
+    codigo = models.CharField(max_length=100, unique=True)
+    quantidade = models.IntegerField(default=0)
+    preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    categoria = models.CharField(max_length=100, blank=True, help_text='Ex: Óleo, Filtro, Corrente, Freio')
+    fornecedor = models.CharField(max_length=255, blank=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+    ativa = models.BooleanField(default=True)
+
+    class Meta:
+        verbose_name = 'Peça'
+        verbose_name_plural = 'Peças'
+        ordering = ['categoria', 'nome']
+
+    def __str__(self):
+        return f'{self.nome} ({self.codigo}) - Qtd: {self.quantidade}'
+
+
+class ItemAgendamento(models.Model):
+    """Peças usadas em cada agendamento"""
+    agendamento = models.ForeignKey('Agendamento', on_delete=models.CASCADE, related_name='itens_peca')
+    peca = models.ForeignKey(Peca, on_delete=models.CASCADE)
+    quantidade_usada = models.IntegerField(default=1)
+    preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)  # Preço no momento do uso
+    data_adicao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Item de Agendamento'
+        verbose_name_plural = 'Itens de Agendamento'
+
+    def __str__(self):
+        return f'{self.agendamento} - {self.peca.nome} x{self.quantidade_usada}'
+
+    @property
+    def subtotal(self):
+        return self.quantidade_usada * self.preco_unitario
+
+
 class Manutencao(models.Model):
     TIPO_SERVICO = [
         ('troca', 'Troca de Óleo'),

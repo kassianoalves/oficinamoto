@@ -309,6 +309,10 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: max(1.5rem, env(safe-area-inset-top)) max(1.5rem, env(safe-area-inset-right)) max(1.5rem, env(safe-area-inset-bottom)) max(1.5rem, env(safe-area-inset-left));
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .view-header {
@@ -549,55 +553,97 @@ export default {
 /* Tablet - 768px e abaixo */
 @media (max-width: 768px) {
   .manutencao-view {
-    padding: 0;
+    padding: 1rem;
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+    gap: 1.5rem;
   }
 
   .view-header {
     flex-direction: column;
-    gap: 0.75rem;
-    padding: 1rem;
+    gap: 1rem;
+    align-items: stretch;
+    margin-bottom: 1rem;
   }
 
   .view-header h2 {
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     margin: 0;
   }
 
   .header-actions {
     width: 100%;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.75rem;
   }
 
   .filter-select {
     width: 100%;
-    min-height: 44px;
-    padding: 0.6rem 0.75rem;
+    min-height: 48px;
+    padding: 0.75rem 1rem;
     font-size: 16px;
-    border-radius: 6px;
+    border-radius: 10px;
+    -webkit-appearance: none;
   }
 
   .btn-add {
     width: 100%;
-    min-height: 44px;
-    padding: 0.6rem 1rem;
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .form-container {
+    padding: 1.25rem;
+    border-radius: 10px;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .form-grid input,
+  .form-grid select,
+  .form-grid textarea {
+    min-height: 48px;
+    padding: 0.75rem 1rem;
+    font-size: 16px;
+    -webkit-appearance: none;
+    border-radius: 8px;
+  }
+
+  .form-grid textarea {
+    min-height: 100px;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+
+  .form-actions button {
+    width: 100%;
+    min-height: 48px;
+    padding: 0.75rem;
     font-size: 1rem;
   }
 
   .agendamentos-list {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 1rem;
     padding: 0;
   }
 
   .agendamento-card {
-    border-radius: 8px;
-    padding: 1rem;
+    border-radius: 10px;
+    padding: 1.25rem;
   }
 
-  .agendamento-card h3 {
-    font-size: 1.1rem;
-    margin: 0 0 0.5rem 0;
+  .agendamento-card h4 {
+    font-size: 1.15rem;
+    margin: 0 0 0.75rem 0;
   }
 
   .agendamento-info {
@@ -605,9 +651,23 @@ export default {
   }
 
   .agendamento-info p {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     margin: 0.25rem 0;
     word-break: break-word;
+  }
+
+  .agendamento-actions {
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .agendamento-actions button {
+    min-height: 44px;
+    padding: 0.65rem 1rem;
+    flex: 1;
+    min-width: 100px;
+    font-size: 0.9rem;
   }
 
   .status-badge {
@@ -615,159 +675,93 @@ export default {
     font-size: 0.85rem;
     border-radius: 20px;
   }
+}
+@media (max-width: 480px) {
+  .manutencao-view {
+    padding: 0.75rem;
+    padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+    gap: 1rem;
+  }
 
-  .form-grid {
-    grid-template-columns: 1fr;
+  .view-header {
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .view-header h2 {
+    font-size: 1.2rem;
+  }
+
+  .header-actions {
     gap: 0.75rem;
   }
 
-  .form-grid select,
-  .form-grid input {
+  .filter-select {
     min-height: 44px;
-    padding: 0.6rem 0.75rem;
+    padding: 0.65rem 0.85rem;
     font-size: 16px;
-    border-radius: 6px;
   }
 
-  .form-full {
-    margin: 0.75rem 0;
-  }
-
-  .form-full textarea {
-    min-height: 80px;
-    width: 100%;
-    padding: 0.6rem 0.75rem;
-    font-size: 16px;
-    border-radius: 6px;
-    resize: vertical;
+  .btn-add {
+    min-height: 44px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.95rem;
   }
 
   .form-container {
-    margin: 0;
     padding: 1rem;
     border-radius: 8px;
   }
 
   .form-container h3 {
-    font-size: 1.2rem;
-    margin: 0 0 1rem 0;
-  }
-
-  .form-actions {
-    flex-direction: column;
-    gap: 0.5rem;
-    margin-top: 1rem;
-  }
-
-  .form-actions button {
-    width: 100%;
-    min-height: 44px;
-    padding: 0.6rem 1rem;
-    font-size: 0.95rem;
-  }
-
-  .agendamento-actions {
-    width: 100%;
-    flex-direction: row;
-    gap: 0.5rem;
-  }
-
-  .agendamento-actions button {
-    flex: 1;
-    padding: 0.5rem;
-    font-size: 0.85rem;
-    min-height: 40px;
-  }
-}
-
-/* Smartphone pequeno - 480px e abaixo */
-@media (max-width: 480px) {
-  .view-header {
-    padding: 0.75rem;
-  }
-
-  .view-header h2 {
     font-size: 1.1rem;
-  }
-
-  .header-actions {
-    gap: 0.4rem;
-  }
-
-  .filter-select {
-    min-height: 40px;
-    padding: 0.5rem 0.6rem;
-    font-size: 16px;
-  }
-
-  .btn-add {
-    min-height: 40px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.9rem;
-  }
-
-  .agendamentos-list {
-    gap: 0.5rem;
-    padding: 0.5rem;
-  }
-
-  .agendamento-card {
-    padding: 0.75rem;
-    border-radius: 6px;
-  }
-
-  .agendamento-card h3 {
-    font-size: 1rem;
-  }
-
-  .agendamento-info p {
-    font-size: 0.85rem;
-  }
-
-  .status-badge {
-    padding: 0.3rem 0.6rem;
-    font-size: 0.8rem;
-  }
-
-  .form-grid {
-    gap: 0.5rem;
   }
 
   .form-grid select,
   .form-grid input {
-    min-height: 40px;
-    padding: 0.5rem 0.6rem;
+    min-height: 44px;
+    padding: 0.65rem 0.85rem;
     font-size: 16px;
   }
 
   .form-full textarea {
-    min-height: 70px;
-    padding: 0.5rem 0.6rem;
-  }
-
-  .form-container {
-    padding: 0.75rem;
-    border-radius: 6px;
-  }
-
-  .form-container h3 {
-    font-size: 1.05rem;
+    min-height: 90px;
+    padding: 0.65rem 0.85rem;
+    font-size: 16px;
   }
 
   .form-actions button {
-    min-height: 40px;
-    padding: 0.5rem 0.75rem;
-    font-size: 0.85rem;
+    min-height: 44px;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.95rem;
+  }
+
+  .agendamentos-list {
+    gap: 0.75rem;
+  }
+
+  .agendamento-card {
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .agendamento-card h4 {
+    font-size: 1.05rem;
+  }
+
+  .agendamento-info p {
+    font-size: 0.9rem;
   }
 
   .agendamento-actions {
-    gap: 0.3rem;
+    flex-direction: column;
   }
 
   .agendamento-actions button {
-    padding: 0.4rem 0.5rem;
-    font-size: 0.8rem;
-    min-height: 36px;
+    width: 100%;
+    min-height: 44px;
+    padding: 0.65rem;
+    font-size: 0.9rem;
   }
 }
 </style>

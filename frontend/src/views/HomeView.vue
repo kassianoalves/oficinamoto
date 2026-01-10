@@ -204,6 +204,10 @@ export default {
   display: flex;
   flex-direction: column;
   gap: 2rem;
+  padding: max(1rem, env(safe-area-inset-top)) max(1rem, env(safe-area-inset-right)) max(1rem, env(safe-area-inset-bottom)) max(1rem, env(safe-area-inset-left));
+  max-width: 1400px;
+  margin: 0 auto;
+  width: 100%;
 }
 
 .hero {
@@ -616,16 +620,102 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .home-view {
+    gap: 1.5rem;
+    padding: 1rem;
+    padding-top: calc(1rem + env(safe-area-inset-top, 0px));
+  }
+
+  .hero {
+    padding: 2rem 1.25rem;
+    margin: 0;
+  }
+
   .hero h1 {
-    font-size: 1.8rem;
+    font-size: 1.5rem;
+    line-height: 1.3;
   }
 
   .hero p {
-    font-size: 1rem;
+    font-size: 0.95rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    margin: 0;
+  }
+
+  .stat-card {
+    padding: 1.25rem 1rem;
   }
 
   .stat-card h3 {
     font-size: 2rem;
+  }
+
+  .quick-actions {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+  }
+
+  .action-btn {
+    min-height: 48px;
+    padding: 1rem;
+    font-size: 1rem;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .modal-fila {
+    width: 95vw;
+    max-width: none;
+    margin: 1rem;
+    max-height: 85vh;
+  }
+
+  .fila-item {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .home-view {
+    gap: 1rem;
+    padding: 0.75rem;
+    padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+  }
+
+  .hero {
+    padding: 1.5rem 1rem;
+    border-radius: 8px;
+  }
+
+  .hero h1 {
+    font-size: 1.3rem;
+  }
+
+  .hero p {
+    font-size: 0.9rem;
+  }
+
+  .stat-card {
+    padding: 1rem 0.75rem;
+  }
+
+  .stat-card h3 {
+    font-size: 1.75rem;
+  }
+
+  .stat-card p {
+    font-size: 0.85rem;
+  }
+
+  .action-btn {
+    padding: 0.875rem;
+    font-size: 0.95rem;
   }
 }
 </style>

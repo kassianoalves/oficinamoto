@@ -3,9 +3,44 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-from .models import Manutencao, Agendamento, Lembrete, PontosFidelidade
-from .serializers import ManutencaoSerializer, AgendamentoSerializer, LembreteSerializer, PontosFidelidadeSerializer
+from .models import Manutencao, Agendamento, Lembrete, PontosFidelidade, Peca, ItemAgendamento
+from .serializers import (
+    ManutencaoSerializer, AgendamentoSerializer, LembreteSerializer, 
+    PontosFidelidadeSerializer, PecaSerializer, ItemAgendamentoSerializer,
+    AgendamentoComItensSerializer
+)
 from clientes.group_permissions import HasGroupPermission, IsAdminGroup
+
+class PecaViewSet(viewsets.ModelViewSet):
+    """Gerenciamento de inventário de peças"""
+    queryset = Peca.objects.all()
+    serializer_class = PecaSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, HasGroupPermission]
+    
+    def get_queryset(self):
+        queryset = Peca.objects.all()
+        categoria = self.request.query_params.get('categoria')
+        if categoria:
+            queryset = queryset.filter(categoria=categoria)
+        ativa = self.request.query_params.get('ativa')
+        if ativa:
+            queryset = queryset.filter(ativa=ativa.lower() == 'true')
+        return queryset.order_by('categoria', 'nome')
+
+class ItemAgendamentoViewSet(viewsets.ModelViewSet):
+    """Gerenciamento de itens (peças) por agendamento"""
+    queryset = ItemAgendamento.objects.all()
+    serializer_class = ItemAgendamentoSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated, HasGroupPermission]
+
+    def get_queryset(self):
+        queryset = ItemAgendamento.objects.select_related('agendamento', 'peca')
+        agendamento_id = self.request.query_params.get('agendamento_id')
+        if agendamento_id:
+            queryset = queryset.filter(agendamento_id=agendamento_id)
+        return queryset
 
 class ManutencaoViewSet(viewsets.ModelViewSet):
     """Gerenciamento de manutenções com consultas otimizadas."""

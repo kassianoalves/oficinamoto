@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import ClientesView from '@/views/ClientesView.vue'
 import ManutencaoView from '@/views/ManutencaoView.vue'
+import PecasView from '@/views/PecasView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
@@ -51,6 +52,12 @@ const routes = [
     path: '/manutencoes',
     name: 'Agendamento',
     component: ManutencaoView,
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/pecas',
+    name: 'Peças',
+    component: PecasView,
     meta: { requiresAuth: true }
   },
   {
