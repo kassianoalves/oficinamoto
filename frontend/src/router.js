@@ -5,6 +5,7 @@ import ManutencaoView from '@/views/ManutencaoView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import PlansView from '@/views/PlansView.vue'
 import FornecedoresView from '@/views/FornecedoresView.vue'
 import LojaView from '@/views/LojaView.vue'
@@ -33,6 +34,12 @@ const routes = [
     path: '/forgot-password',
     name: 'ForgotPassword',
     component: ForgotPasswordView,
+    meta: { requiresAuth: false }
+  },
+  {
+    path: '/reset-password/:uid/:token',
+    name: 'ResetPassword',
+    component: ResetPasswordView,
     meta: { requiresAuth: false }
   },
   {

@@ -90,8 +90,8 @@ class ForgotPasswordSerializer(serializers.Serializer):
         token = token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(user.pk))
         
-        # URL de reset
-        reset_url = f"http://localhost:5174/reset-password/{uid}/{token}/"
+        # URL de reset - ATUALIZAR PORTA CONFORME NECESSÁRIO
+        reset_url = f"http://localhost:5173/reset-password/{uid}/{token}/"
         
         # Enviar email
         subject = 'Recuperação de Senha - Oficina Moto'

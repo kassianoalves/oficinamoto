@@ -145,16 +145,13 @@ else:
         # Adicione seus domínios de produção aqui
     ]
 
-# Email Configuration (Console Backend para desenvolvimento)
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'noreply@oficinamoto.com'
-
-# Para produção, use:
-# EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-# EMAIL_HOST = 'smtp.gmail.com'
-# EMAIL_PORT = 587
-# EMAIL_USE_TLS = True
-# EMAIL_HOST_USER = 'seu-email@gmail.com'
-# EMAIL_HOST_PASSWORD = 'sua-senha-app'
-# DEFAULT_FROM_EMAIL = 'seu-email@gmail.com'
+# Email Configuration - SMTP Real
+# Gmail: https://myaccount.google.com/apppasswords (gera senha de 16 caracteres)
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'kassianoalvessilva@gmail.com'  # Seu email do Gmail
+EMAIL_HOST_PASSWORD = 'xjei bcjv hlux zlby'    # Senha gerada em https://myaccount.google.com/apppasswords
+DEFAULT_FROM_EMAIL = 'seu_email@gmail.com'
 

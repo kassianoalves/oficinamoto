@@ -275,6 +275,7 @@ export default {
       username.value = ''
       userData.value = {}
       userSubscription.value = null
+      showProfile.value = false
       router.push('/login')
     }
 
