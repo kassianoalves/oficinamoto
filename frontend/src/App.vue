@@ -15,28 +15,18 @@
         <ul class="nav-menu">
           <!-- Menu Base (todos os usuários autenticados) -->
           <li v-if="isAuthenticated"><router-link to="/">🏠 Home</router-link></li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
           <li v-if="isAuthenticated"><router-link to="/clientes">👥 Clientes</router-link></li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
           <li v-if="isAuthenticated"><router-link to="/manutencoes">📅 Agendamento</router-link></li>
-          
+      
           <!-- Menu PRO (PRO e Enterprise) -->
           <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/loja">🛒 Loja</router-link></li>
           
-          <!-- Dropdown Loja (APENAS ENTERPRISE) -->
-          <li
-            v-if="isAuthenticated && isEnterprise"
-            class="dropdown-container"
-            @mouseenter="openDropdown"
-            @mouseleave="closeDropdown"
-          >
-            <button class="dropdown-toggle menu-pro" @click="toggleDropdown">🛒 Loja ▼</button>
-            <ul class="dropdown-menu" :class="{ show: showDropdown }">
-              <li><router-link to="/loja" class="dropdown-item">Loja Principal</router-link></li>
-              
-              <!-- Submenu Enterprise -->
-              <li v-if="isEnterprise" class="dropdown-separator"></li>
-              <li v-if="isEnterprise"><router-link to="/fornecedores" class="dropdown-item enterprise">🤝 Fornecedores</router-link></li>
-            </ul>
-          </li>
+          <!-- Menu ENTERPRISE -->
+          <li v-if="isAuthenticated && isEnterprise" class="menu-separator">|</li>
+          <li v-if="isAuthenticated && isEnterprise"><router-link to="/fornecedores">🤝 Fornecedores</router-link></li>
         </ul>
         <div class="nav-right">
           <router-link v-if="isAuthenticated" to="/planos" class="menu-plans">💎 Planos</router-link>
@@ -48,10 +38,14 @@
           <template v-else>
             <button @click="openProfileModal" :class="['btn-user-profile', profilePlanClass]" :title="`Plano: ${getPlanName()}`">
               <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" :class="['user-avatar', avatarBorderClass]" />
-              {{ displayName }}
-              <span v-if="isPro" class="badge badge-pro plan-badge">PRO</span>
-              <span v-if="isEnterprise" class="badge badge-enterprise plan-badge">ENTERPRISE</span>
-              <span v-if="isFree" class="badge badge-free plan-badge">GRÁTIS</span>
+              <div class="user-info">
+                <span class="user-name">{{ displayName }}</span>
+                <span class="user-plan">
+                  <span v-if="isPro" class="plan-label plan-pro">PRO</span>
+                  <span v-if="isEnterprise" class="plan-label plan-enterprise">ENTERPRISE</span>
+                  <span v-if="isFree" class="plan-label plan-free">GRÁTIS</span>
+                </span>
+              </div>
             </button>
           </template>
           </div>
@@ -59,7 +53,11 @@
       </div>
     </nav>
     <main :class="['main-content', { 'main-auth': isAuthPage }]">
-      <router-view @login="checkAuth" />
+      <router-view v-slot="{ Component }">
+        <transition name="fade" mode="out-in">
+          <component :is="Component" @login="checkAuth" />
+        </transition>
+      </router-view>
     </main>
     <ProfileModal 
       :show="showProfile" 
@@ -80,13 +78,14 @@
 </template>
 
 <script>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/api.js'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ProfileModal from '@/components/ProfileModal.vue'
 import LogoUploadModal from '@/components/LogoUploadModal.vue'
-import avatarPlaceholder from '@/assets/avatar-placeholder.svg'
+import { makeInitialsAvatar, withCacheBust } from '@/utils/avatarUtils'
+import { useSubscription } from '@/composables/useSubscription'
 // import logoImage from '@/assets/logo.png'  // Descomente após adicionar logo.png em src/assets/
 
 export default {
@@ -103,19 +102,20 @@ export default {
     const username = ref('')
     const showProfile = ref(false)
     const userData = ref({})
-    const userSubscription = ref(null)
-    const isPro = ref(false)
-    const isEnterprise = ref(false)
-    const isFree = ref(false)
-    const showDropdown = ref(false)
+    // Estado de assinatura centralizado no composable
+    const { userSubscription, isPro, isEnterprise, isFree, loadSubscription } = useSubscription()
     const showLogoModal = ref(false)
     const siteLogo = ref('')
     const siteName = ref('Moto Express')
     const isAdmin = computed(() => userData.value.is_admin || false)
 
     const displayName = computed(() => {
+      // Prioridade: first_name + last_name > first_name sozinho > username
       if (userData.value.first_name && userData.value.last_name) {
         return `${userData.value.first_name} ${userData.value.last_name}`
+      }
+      if (userData.value.first_name) {
+        return userData.value.first_name
       }
       return username.value
     })
@@ -125,32 +125,7 @@ export default {
       return authPages.includes(route.name)
     })
 
-    const withBust = (url) => {
-      if (!url) return url
-      const sep = url.includes('?') ? '&' : '?'
-      return `${url}${sep}v=${Date.now()}`
-    }
-
-    const makeInitialsAvatar = (name) => {
-      const initials = (name || '')
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map(s => s.charAt(0).toUpperCase())
-        .join('') || '?'
-      const svg = `
-        <svg xmlns='http://www.w3.org/2000/svg' width='64' height='64' viewBox='0 0 64 64'>
-          <defs>
-            <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-              <stop offset='0%' stop-color='#667eea'/>
-              <stop offset='100%' stop-color='#764ba2'/>
-            </linearGradient>
-          </defs>
-          <circle cx='32' cy='32' r='32' fill='url(#g)'/>
-          <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-family='Segoe UI, Arial' font-size='26' fill='#fff' font-weight='700'>${initials}</text>
-        </svg>`
-      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
-    }
+    // Funções de utilidade de avatar importadas de utils/avatarUtils.js
 
     const avatarInitials = computed(() => makeInitialsAvatar(displayName.value || username.value))
 
@@ -175,45 +150,16 @@ export default {
           userData.value = JSON.parse(user)
           username.value = userData.value.username || userData.value.email
           
-          // Carregar subscrição do usuário
+          // Carregar subscrição do usuário (state centralizado)
           if (token) {
-            await carregarSubscricao()
+            await loadSubscription()
           }
         } catch (e) {
+          console.error('Erro ao fazer parse do usuário:', e)
           username.value = ''
         }
       }
-    }
-
-    const openDropdown = () => {
-      showDropdown.value = true
-    }
-
-    const closeDropdown = () => {
-      showDropdown.value = false
-    }
-
-    const toggleDropdown = () => {
-      showDropdown.value = !showDropdown.value
-    }
-
-    const carregarSubscricao = async () => {
-      try {
-        const res = await api.get('/subscription/subscription/')
-        const subscription = res.data.results ? res.data.results[0] : (Array.isArray(res.data) ? res.data[0] : res.data)
-        
-        userSubscription.value = subscription
-        const planName = subscription?.plan_name
-        
-        isPro.value = planName === 'pro'
-        isEnterprise.value = planName === 'enterprise'
-        isFree.value = planName === 'free'
-      } catch (err) {
-        console.error('Erro ao carregar subscrição:', err)
-        isPro.value = false
-        isEnterprise.value = false
-        isFree.value = true
-      }
+      return isAuthenticated.value
     }
 
     const currentPlan = computed(() => userSubscription.value?.plan_name || 'free')
@@ -235,10 +181,13 @@ export default {
     }
 
     const handleProfileUpdate = (updatedUser) => {
-      if (updatedUser.avatar) updatedUser.avatar = withBust(updatedUser.avatar)
-      if (updatedUser.avatar_thumb) updatedUser.avatar_thumb = withBust(updatedUser.avatar_thumb)
+      if (updatedUser.avatar) updatedUser.avatar = withCacheBust(updatedUser.avatar)
+      if (updatedUser.avatar_thumb) updatedUser.avatar_thumb = withCacheBust(updatedUser.avatar_thumb)
       userData.value = updatedUser
       username.value = updatedUser.username || updatedUser.email
+      
+      // Atualizar localStorage com os dados mais recentes
+      localStorage.setItem('user', JSON.stringify(updatedUser))
     }
 
     const openLogoModal = () => {
@@ -247,7 +196,7 @@ export default {
 
     const handleLogoUpdate = (settings) => {
       if (settings.logo_url) {
-        siteLogo.value = withBust(settings.logo_url)
+        siteLogo.value = withCacheBust(settings.logo_url)
       }
       if (settings.site_name) {
         siteName.value = settings.site_name
@@ -279,12 +228,19 @@ export default {
       router.push('/login')
     }
 
-    onMounted(() => {
-      checkAuth()
-      loadSiteSettings()
-      router.afterEach(() => {
-        checkAuth()
-      })
+    // Watcher para monitorar mudanças no localStorage (para atualizar menu após login)
+    watch(
+      () => localStorage.getItem('authToken'),
+      async (newToken) => {
+        if (newToken) {
+          await checkAuth()
+        }
+      }
+    )
+
+    onMounted(async () => {
+      await checkAuth()
+      await loadSiteSettings()
     })
 
     return {
@@ -302,21 +258,17 @@ export default {
       handleProfileUpdate,
       logout,
       getPlanName,
-      showDropdown,
-      openDropdown,
-      closeDropdown,
-      toggleDropdown
-      ,avatarPlaceholder
-      ,avatarInitials
-      ,avatarBorderClass
-      ,profilePlanClass
-      ,currentPlan
-      ,isAuthPage      ,showLogoModal
-      ,siteLogo
-      ,siteName
-      ,isAdmin
-      ,openLogoModal
-      ,handleLogoUpdate      // ,logoImage  // Descomente após adicionar logo.png
+      avatarInitials,
+      avatarBorderClass,
+      profilePlanClass,
+      currentPlan,
+      isAuthPage,
+      showLogoModal,
+      siteLogo,
+      siteName,
+      isAdmin,
+      openLogoModal,
+      handleLogoUpdate
     }
   }
 }
@@ -625,6 +577,57 @@ body {
   object-fit: cover;
   border: 2px solid rgba(255,255,255,0.6);
   box-shadow: 0 0 0 2px rgba(255,255,255,0.15);
+  flex-shrink: 0;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.user-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 150px;
+}
+
+.user-plan {
+  display: flex;
+  align-items: center;
+  font-size: 0.7rem;
+}
+
+.plan-label {
+  padding: 0.15rem 0.5rem;
+  border-radius: 8px;
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  white-space: nowrap;
+}
+
+.plan-label.plan-free {
+  color: #64b5f6;
+}
+
+.plan-label.plan-pro {
+  background: rgb(6, 71, 131);
+  color: #00eeff;
+  border: 1px solid rgba(0, 89, 255, 0.4);
+}
+
+.plan-label.plan-enterprise {
+  background: rgba(255, 215, 0, 0.25);
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.5);
 }
 
 .user-avatar.placeholder {
@@ -644,7 +647,7 @@ body {
 
 .user-avatar.border-pro {
   border: 3px solid transparent;
-  background-image: linear-gradient(white, white), linear-gradient(135deg, #a855f7 0%, #ec4899 100%);
+  background-image: linear-gradient(white, white), linear-gradient(135deg, #0004f8 0%, #00ccff 100%);
   background-origin: border-box;
   background-clip: padding-box, border-box;
   box-shadow: 0 0 8px rgba(168, 85, 247, 0.5);
@@ -688,11 +691,11 @@ body {
 }
 
 .profile-theme-pro {
-  --profile-bg: rgba(168, 85, 247, 0.18);
-  --profile-hover: rgba(168, 85, 247, 0.32);
+  --profile-bg: rgba(22, 0, 150, 0.678);
+  --profile-hover: rgba(0, 60, 255, 0.32);
   --profile-border: rgba(168, 85, 247, 0.5);
-  --profile-badge-bg: rgba(236, 72, 153, 0.2);
-  --profile-badge-color: #3b0c44;
+  --profile-badge-bg: rgb(41, 31, 36);
+  --profile-badge-color: #d609ff;
 }
 
 .profile-theme-enterprise {
@@ -756,6 +759,23 @@ body {
   margin: 0;
 }
 
+/* Transições entre páginas */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.fade-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
+}
+
+.fade-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+/* Tablet - 1024px e abaixo */
 @media (max-width: 1024px) {
   .navbar {
     padding: 1rem;
@@ -774,14 +794,58 @@ body {
   .logo h1 {
     font-size: 1.4rem;
   }
+
+  .main-content {
+    padding: 1.5rem;
+  }
 }
 
+/* Mobile - 768px e abaixo */
 @media (max-width: 768px) {
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html, body {
+    overflow-x: hidden;
+  }
+
+  .app-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
   .navbar {
     flex-direction: column;
     align-items: flex-start;
-    gap: 0.75rem;
+    gap: 0.5rem;
     padding: 0.75rem;
+    border-bottom: 2px solid #f0f0f0;
+    flex-wrap: wrap;
+  }
+
+  .logo {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .logo-text {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .logo h1 {
+    font-size: 1.1rem;
+    margin: 0;
+  }
+
+  .logo-img {
+    width: 32px !important;
+    height: 32px !important;
   }
 
   .nav-sections {
@@ -789,27 +853,137 @@ body {
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+    order: 3;
   }
 
   .nav-menu {
-    gap: 0.3rem;
+    gap: 0.25rem;
     flex-wrap: wrap;
     width: 100%;
+    list-style: none;
+    padding: 0;
+    margin: 0;
+  }
+
+  .nav-menu li {
+    margin: 0;
   }
 
   .nav-menu a {
     padding: 0.4rem 0.6rem;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    display: inline-block;
   }
 
-  .logo h1 {
-    font-size: 1.2rem;
+  .nav-menu li.menu-separator {
+    display: none;
+  }
+
+  .nav-right {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    order: 2;
+  }
+
+  .menu-plans {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
   }
 
   .nav-actions {
     width: 100%;
     justify-content: flex-start;
     gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .btn-user-profile {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+    max-width: 100%;
+    gap: 0.4rem;
+  }
+
+  .user-name {
+    font-size: 0.8rem;
+    max-width: 120px;
+  }
+
+  .user-plan {
+    font-size: 0.65rem;
+  }
+
+  .plan-label {
+    padding: 0.1rem 0.4rem;
+    font-size: 0.6rem;
+  }
+
+  .user-avatar {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  .nav-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .nav-btn-primary {
+    padding: 0.4rem 0.8rem;
+  }
+
+  .main-content {
+    flex: 1;
+    padding: 1rem;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Smartphone pequeno - 480px e abaixo */
+@media (max-width: 480px) {
+  .navbar {
+    padding: 0.5rem;
+  }
+
+  .logo h1 {
+    font-size: 0.95rem;
+  }
+
+  .nav-menu a {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .menu-plans {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  .btn-user-profile {
+    padding: 0.3rem 0.5rem;
+    font-size: 0.75rem;
+    display: flex;
+    align-items: center;
+  }
+
+  .btn-user-profile .user-avatar {
+    margin-right: 0.25rem;
+  }
+
+  .main-content {
+    padding: 0.75rem;
+  }
+
+  .nav-sections {
+    gap: 0.3rem;
+  }
+
+  .nav-right {
+    gap: 0.3rem;
   }
 
   .btn-user-profile {

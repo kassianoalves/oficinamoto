@@ -110,7 +110,8 @@
 import { ref, watch, computed } from 'vue'
 import api from '@/api'
 import { useToast } from '@/composables/useToast'
-import avatarPlaceholder from '@/assets/avatar-placeholder.svg'
+import { makeInitialsAvatar, withCacheBust } from '@/utils/avatarUtils'
+import { formatTelefone } from '@/utils/formatters'
 
 export default {
   name: 'ProfileModal',
@@ -146,26 +147,8 @@ export default {
       telefone: props.userData.telefone || ''
     })
 
-    const makeInitialsAvatar = (name) => {
-      const initials = (name || '')
-        .trim()
-        .split(/\s+/)
-        .slice(0, 2)
-        .map(s => s.charAt(0).toUpperCase())
-        .join('') || '?'
-      const svg = `
-        <svg xmlns='http://www.w3.org/2000/svg' width='128' height='128' viewBox='0 0 64 64'>
-          <defs>
-            <linearGradient id='g' x1='0' y1='0' x2='1' y2='1'>
-              <stop offset='0%' stop-color='#667eea'/>
-              <stop offset='100%' stop-color='#764ba2'/>
-            </linearGradient>
-          </defs>
-          <circle cx='32' cy='32' r='32' fill='url(#g)'/>
-          <text x='50%' y='54%' text-anchor='middle' dominant-baseline='middle' font-family='Segoe UI, Arial' font-size='22' fill='#fff' font-weight='700'>${initials}</text>
-        </svg>`
-      return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`
-    }
+    // Funções de utilidade importadas de utils/
+    // makeInitialsAvatar, withCacheBust, formatTelefone
 
     watch(
       () => props.show,
@@ -224,14 +207,9 @@ export default {
         })
         console.log('Resposta recebida:', response.data)
         // Cache bust nas URLs do avatar
-        const withBust = (url) => {
-          if (!url) return url
-          const sep = url.includes('?') ? '&' : '?'
-          return `${url}${sep}v=${Date.now()}`
-        }
         const updated = { ...response.data }
-        if (updated.avatar) updated.avatar = withBust(updated.avatar)
-        if (updated.avatar_thumb) updated.avatar_thumb = withBust(updated.avatar_thumb)
+        if (updated.avatar) updated.avatar = withCacheBust(updated.avatar)
+        if (updated.avatar_thumb) updated.avatar_thumb = withCacheBust(updated.avatar_thumb)
 
         localStorage.setItem('user', JSON.stringify(updated))
         showToast('Perfil atualizado com sucesso!', 'success')
@@ -346,19 +324,13 @@ export default {
       avatarError,
       avatarInfo,
       avatarInitials,
-      avatarPlaceholder,
+      avatarPlaceholder: '', // Não mais necessário
       fieldErrors,
       closeModal,
       updateProfile,
       onFileChange,
       resizeImageToSquare,
-      formatTelefone: (val) => {
-        const digits = (val || '').replace(/\D/g, '')
-        if (digits.length <= 10) {
-          return digits.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3')
-        }
-        return digits.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
-      }
+      formatTelefone  // Importado de utils/formatters.js
     }
   }
 }

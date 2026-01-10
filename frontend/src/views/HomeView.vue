@@ -73,8 +73,9 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import api from '@/api.js'
+import { useSubscription } from '@/composables/useSubscription'
 
 export default {
   name: 'HomeView',
@@ -84,22 +85,10 @@ export default {
     const agendamentosProximos = ref(0)
     const showFila = ref(false)
     const filaAtendimento = ref([])
-    const userPlan = ref('free')
 
-    const carregarPlanDoUsuario = async () => {
-      try {
-        const res = await api.get('/subscription/subscription/')
-        console.log('🏠 HomeView - Resposta da API:', res.data)
-        // A API retorna paginação: {results: [{...}]}
-        const subscription = res.data.results ? res.data.results[0] : (Array.isArray(res.data) ? res.data[0] : res.data)
-        console.log('🏠 HomeView - Subscrição:', subscription)
-        console.log('🏠 HomeView - Plan name:', subscription?.plan_name)
-        userPlan.value = subscription?.plan_name || 'free'
-        console.log('🏠 HomeView - userPlan definido como:', userPlan.value)
-      } catch (err) {
-        console.error('❌ HomeView - Erro ao carregar plano:', err)
-      }
-    }
+    // Estado de assinatura centralizado
+    const { userSubscription, loadSubscription } = useSubscription()
+    const userPlan = computed(() => userSubscription.value?.plan_name || 'free')
 
     const getTipoServico = (tipo) => {
       const tipos = {
@@ -131,16 +120,14 @@ export default {
 
     const carregarFila = async () => {
       try {
-        // Carregar todos os agendamentos
-        const agendamentosRes = await api.get('/agendamentos/')
+        const [agendamentosRes, motosRes, clientesRes] = await Promise.all([
+          api.get('/agendamentos/'),
+          api.get('/motos/'),
+          api.get('/clientes/')
+        ])
+
         const agendamentos = agendamentosRes.data.results || agendamentosRes.data || []
-
-        // Carregar motos
-        const motosRes = await api.get('/motos/')
         const motos = motosRes.data.results || motosRes.data || []
-
-        // Carregar clientes
-        const clientesRes = await api.get('/clientes/')
         const clientes = clientesRes.data.results || clientesRes.data || []
 
         // Filtrar agendamentos pendentes e em andamento, ordenados por data e hora
@@ -179,20 +166,20 @@ export default {
 
     onMounted(async () => {
       try {
-        const clientesRes = await api.get('/clientes/')
-        totalClientes.value = clientesRes.data.length || clientesRes.data.count || 0
+        const [clientesRes, motosRes, agendamentosRes] = await Promise.all([
+          api.get('/clientes/'),
+          api.get('/motos/'),
+          api.get('/agendamentos/?status=concluido')
+        ])
 
-        const motosRes = await api.get('/motos/')
-        totalMotos.value = motosRes.data.length || motosRes.data.count || 0
-
-        const agendamentosRes = await api.get('/agendamentos/?status=concluido')
-        agendamentosProximos.value = agendamentosRes.data.length || agendamentosRes.data.count || 0
+        totalClientes.value = clientesRes.data.count ?? clientesRes.data.length ?? 0
+        totalMotos.value = motosRes.data.count ?? motosRes.data.length ?? 0
+        agendamentosProximos.value = agendamentosRes.data.count ?? agendamentosRes.data.length ?? 0
 
         // Carregar fila ao inicializar
         carregarFila()
-        
-        // Carregar plano do usuário
-        carregarPlanDoUsuario()
+        // Carregar plano do usuário (state centralizado)
+        await loadSubscription()
       } catch (error) {
         console.error('Erro ao carregar dados:', error)
       }
@@ -325,11 +312,11 @@ export default {
 .quick-actions {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .action-btn {
-  padding: 1rem;
+  padding: 0.85rem;
   border-radius: 8px;
   text-decoration: none;
   font-weight: 600;
@@ -347,6 +334,11 @@ export default {
   overflow: hidden;
 }
 
+.btn-primary > * {
+  position: relative;
+  z-index: 2;
+}
+
 .btn-primary::before {
   content: '';
   position: absolute;
@@ -354,8 +346,10 @@ export default {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
-  transition: left 0.5s ease;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  transition: left 0.6s ease;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .btn-primary:hover::before {
@@ -363,7 +357,7 @@ export default {
 }
 
 .btn-primary:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
@@ -381,8 +375,10 @@ export default {
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
-  transition: left 0.5s ease;
+  background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.3) 50%, transparent 100%);
+  transition: left 0.6s ease;
+  z-index: 1;
+  pointer-events: none;
 }
 
 .btn-secondary:hover::before {
@@ -390,18 +386,24 @@ export default {
 }
 
 .btn-secondary:hover {
-  transform: scale(1.05);
+  transform: scale(1.02);
   box-shadow: 0 6px 20px rgba(102, 126, 234, 0.5);
 }
 
 .btn-fila {
   position: relative;
+  overflow: visible;
+}
+
+.btn-fila > * {
+  position: relative;
+  z-index: 2;
 }
 
 .fila-badge {
   position: absolute;
-  top: -8px;
-  right: -8px;
+  top: -10px;
+  right: -10px;
   background: #ff4444;
   color: white;
   border-radius: 50%;
@@ -412,8 +414,10 @@ export default {
   justify-content: center;
   font-size: 0.85rem;
   font-weight: bold;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(255, 68, 68, 0.4);
   border: 2px solid white;
+  z-index: 10;
+  pointer-events: none;
 }
 
 .btn-tertiary {

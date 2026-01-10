@@ -8,15 +8,19 @@ from .serializers import ManutencaoSerializer, AgendamentoSerializer, LembreteSe
 from clientes.group_permissions import HasGroupPermission, IsAdminGroup
 
 class ManutencaoViewSet(viewsets.ModelViewSet):
+    """Gerenciamento de manutenções com consultas otimizadas."""
     serializer_class = ManutencaoSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, HasGroupPermission]
     
     def get_queryset(self):
+        # select_related evita N+1 ao acessar moto e cliente da moto
+        queryset = Manutencao.objects.select_related('moto__cliente')
+
         moto_id = self.request.query_params.get('moto_id')
         if moto_id:
-            return Manutencao.objects.filter(moto_id=moto_id)
-        return Manutencao.objects.all()
+            queryset = queryset.filter(moto_id=moto_id)
+        return queryset
 
     def get_permissions(self):
         """Apenas admin pode deletar"""
@@ -28,15 +32,18 @@ class ManutencaoViewSet(viewsets.ModelViewSet):
         return super().get_permissions()
 
 class AgendamentoViewSet(viewsets.ModelViewSet):
+    """Gerenciamento de agendamentos com consultas otimizadas."""
     serializer_class = AgendamentoSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, HasGroupPermission]
     
     def get_queryset(self):
+        # select_related evita N+1 ao acessar moto e cliente, prefetch para lembretes
+        queryset = Agendamento.objects.select_related('moto__cliente').prefetch_related('lembretes')
+
         moto_id = self.request.query_params.get('moto_id')
         status = self.request.query_params.get('status')
         
-        queryset = Agendamento.objects.all()
         if moto_id:
             queryset = queryset.filter(moto_id=moto_id)
         if status:

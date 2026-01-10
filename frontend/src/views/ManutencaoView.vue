@@ -56,8 +56,11 @@
       </form>
     </div>
 
+    <!-- Loading State -->
+    <SkeletonLoader v-if="loading" :count="4" variant="card" />
+
     <!-- Lista de Agendamentos -->
-    <div v-if="agendamentosFiltrados.length" class="agendamentos-list">
+    <div v-else-if="agendamentosFiltrados.length" class="agendamentos-list">
       <div v-for="agendamento in agendamentosFiltrados" :key="agendamento.id" class="agendamento-card" :class="getStatusClass(agendamento.status)">
         <div class="agendamento-info">
           <h4>{{ getClienteNome(agendamento.moto) }}</h4>
@@ -85,19 +88,24 @@
 import { ref, computed, onMounted } from 'vue'
 import api from '@/api.js'
 import { useToast } from '@/composables/useToast'
+import { useEntityCache } from '@/composables/useEntityCache'
+import SkeletonLoader from '@/components/SkeletonLoader.vue'
 
 export default {
   name: 'ManutencaoView',
+  components: {
+    SkeletonLoader
+  },
   setup() {
     const { success, error } = useToast()
     const agendamentos = ref([])
-    const motos = ref([])
-    const clientes = ref([])
+    const { motos, clientes, loadMotos, loadClientes } = useEntityCache()
     const clienteSelecionado = ref('')
     const motosCliente = ref([])
     const showForm = ref(false)
     const editingId = ref(null)
     const filtroStatus = ref('')
+    const loading = ref(true)
     const form = ref({
       moto: '',
       tipo_servico: 'manutencao',
@@ -128,41 +136,32 @@ export default {
       }
     }
 
-    const carregarMotos = async () => {
+    const carregarDadosBase = async () => {
+      loading.value = true
       try {
-        const res = await api.get('/motos/')
-        motos.value = res.data.results || res.data || []
+        const [agRes] = await Promise.all([
+          api.get('/agendamentos/'),
+          loadMotos(),
+          loadClientes()
+        ])
+        agendamentos.value = agRes.data.results || agRes.data || []
       } catch (err) {
-        console.error('Erro ao carregar motos:', err)
-        error('Erro ao carregar motos')
+        console.error('Erro ao carregar dados iniciais:', err)
+        error('Erro ao carregar dados iniciais')
+      } finally {
+        loading.value = false
       }
     }
 
-    const carregarClientes = async () => {
-      try {
-        const res = await api.get('/clientes/')
-        clientes.value = res.data.results || res.data || []
-      } catch (err) {
-        console.error('Erro ao carregar clientes:', err)
-        error('Erro ao carregar clientes')
-      }
-    }
-
-    const carregarMotosCliente = async () => {
+    const carregarMotosCliente = () => {
       if (!clienteSelecionado.value) {
         motosCliente.value = []
         form.value.moto = ''
         return
       }
-      try {
-        const res = await api.get('/motos/')
-        const todasMotos = res.data.results || res.data || []
-        motosCliente.value = todasMotos.filter(m => m.cliente === parseInt(clienteSelecionado.value))
-        form.value.moto = '' // Limpa a seleção de moto ao trocar de cliente
-      } catch (err) {
-        console.error('Erro ao carregar motos do cliente:', err)
-        error('Erro ao carregar motos do cliente')
-      }
+      const todasMotos = motos.value || []
+      motosCliente.value = todasMotos.filter(m => m.cliente === parseInt(clienteSelecionado.value))
+      form.value.moto = '' // Limpa a seleção de moto ao trocar de cliente
     }
 
     const getTipoServico = (tipo) => {
@@ -273,9 +272,7 @@ export default {
     }
 
     onMounted(() => {
-      carregarMotos()
-      carregarClientes()
-      carregarAgendamentos()
+      carregarDadosBase()
     })
 
     return {
@@ -289,12 +286,14 @@ export default {
       editingId,
       form,
       filtroStatus,
+      loading,
       carregarMotosCliente,
       salvarAgendamento,
       editarAgendamento,
       deletarAgendamento,
       finalizarAgendamento,
       resetForm,
+      carregarDadosBase,
       getTipoServico,
       getMotoDados,
       getClienteNome,
@@ -547,13 +546,228 @@ export default {
   font-size: 1.1rem;
 }
 
+/* Tablet - 768px e abaixo */
 @media (max-width: 768px) {
+  .manutencao-view {
+    padding: 0;
+  }
+
+  .view-header {
+    flex-direction: column;
+    gap: 0.75rem;
+    padding: 1rem;
+  }
+
+  .view-header h2 {
+    font-size: 1.3rem;
+    margin: 0;
+  }
+
+  .header-actions {
+    width: 100%;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .filter-select {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.6rem 0.75rem;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+
+  .btn-add {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    font-size: 1rem;
+  }
+
   .agendamentos-list {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+    padding: 0;
+  }
+
+  .agendamento-card {
+    border-radius: 8px;
+    padding: 1rem;
+  }
+
+  .agendamento-card h3 {
+    font-size: 1.1rem;
+    margin: 0 0 0.5rem 0;
+  }
+
+  .agendamento-info {
+    gap: 0.5rem;
+  }
+
+  .agendamento-info p {
+    font-size: 0.9rem;
+    margin: 0.25rem 0;
+    word-break: break-word;
+  }
+
+  .status-badge {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.85rem;
+    border-radius: 20px;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .form-grid select,
+  .form-grid input {
+    min-height: 44px;
+    padding: 0.6rem 0.75rem;
+    font-size: 16px;
+    border-radius: 6px;
+  }
+
+  .form-full {
+    margin: 0.75rem 0;
+  }
+
+  .form-full textarea {
+    min-height: 80px;
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    font-size: 16px;
+    border-radius: 6px;
+    resize: vertical;
+  }
+
+  .form-container {
+    margin: 0;
+    padding: 1rem;
+    border-radius: 8px;
+  }
+
+  .form-container h3 {
+    font-size: 1.2rem;
+    margin: 0 0 1rem 0;
+  }
+
+  .form-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+  }
+
+  .form-actions button {
+    width: 100%;
+    min-height: 44px;
+    padding: 0.6rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .agendamento-actions {
+    width: 100%;
+    flex-direction: row;
+    gap: 0.5rem;
+  }
+
+  .agendamento-actions button {
+    flex: 1;
+    padding: 0.5rem;
+    font-size: 0.85rem;
+    min-height: 40px;
+  }
+}
+
+/* Smartphone pequeno - 480px e abaixo */
+@media (max-width: 480px) {
+  .view-header {
+    padding: 0.75rem;
+  }
+
+  .view-header h2 {
+    font-size: 1.1rem;
+  }
+
+  .header-actions {
+    gap: 0.4rem;
+  }
+
+  .filter-select {
+    min-height: 40px;
+    padding: 0.5rem 0.6rem;
+    font-size: 16px;
+  }
+
+  .btn-add {
+    min-height: 40px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.9rem;
+  }
+
+  .agendamentos-list {
+    gap: 0.5rem;
+    padding: 0.5rem;
+  }
+
+  .agendamento-card {
+    padding: 0.75rem;
+    border-radius: 6px;
+  }
+
+  .agendamento-card h3 {
+    font-size: 1rem;
+  }
+
+  .agendamento-info p {
+    font-size: 0.85rem;
+  }
+
+  .status-badge {
+    padding: 0.3rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .form-grid {
+    gap: 0.5rem;
+  }
+
+  .form-grid select,
+  .form-grid input {
+    min-height: 40px;
+    padding: 0.5rem 0.6rem;
+    font-size: 16px;
+  }
+
+  .form-full textarea {
+    min-height: 70px;
+    padding: 0.5rem 0.6rem;
+  }
+
+  .form-container {
+    padding: 0.75rem;
+    border-radius: 6px;
+  }
+
+  .form-container h3 {
+    font-size: 1.05rem;
+  }
+
+  .form-actions button {
+    min-height: 40px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.85rem;
+  }
+
+  .agendamento-actions {
+    gap: 0.3rem;
+  }
+
+  .agendamento-actions button {
+    padding: 0.4rem 0.5rem;
+    font-size: 0.8rem;
+    min-height: 36px;
   }
 }
 </style>

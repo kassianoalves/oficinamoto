@@ -3,11 +3,45 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 from rest_framework.routers import DefaultRouter
+from rest_framework.response import Response
+from rest_framework.decorators import api_view
 
 from clientes.views import ClienteViewSet, ProdutoLojaViewSet
 from clientes.auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView, UserDetailView, LogoutView
 from motos.views import MotoViewSet, PecaViewSet
 from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet
+
+# View para retornar a URL da API dinamicamente
+@api_view(['GET'])
+def get_api_config(request):
+    """
+    Retorna informações de configuração da API incluindo:
+    - URL base da API
+    - IP local detectado
+    - Host da requisição
+    """
+    from oficinamoto_api.settings import get_local_ip
+    
+    local_ip = get_local_ip()
+    request_host = request.get_host()  # IP ou hostname + porta vindo da requisição
+    
+    # Detectar protocolo (http ou https)
+    protocol = 'https' if request.is_secure() else 'http'
+    
+    # Construir URL da API baseado no host da requisição
+    if ':' in request_host:
+        host, port = request_host.rsplit(':', 1)
+        api_url = f"{protocol}://{request_host}/api"
+    else:
+        api_url = f"{protocol}://{request_host}/api"
+    
+    return Response({
+        'api_url': api_url,
+        'local_ip': local_ip,
+        'request_host': request_host,
+        'protocol': protocol,
+        'debug': settings.DEBUG,
+    })
 
 router = DefaultRouter()
 router.register(r'clientes', ClienteViewSet, basename='cliente')
@@ -32,6 +66,7 @@ auth_urls = [
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('api/config/', get_api_config, name='api-config'),
     path('api/', include(router.urls)),
     path('api/auth/', include(auth_urls)),
     path('api/subscription/', include('clientes.subscription_urls')),

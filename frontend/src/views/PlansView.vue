@@ -200,24 +200,16 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import api from '@/api.js'
 import { useToast } from '@/composables/useToast'
+import { useSubscription } from '@/composables/useSubscription'
 
 export default {
   name: 'PlansView',
   setup() {
     const { success, error } = useToast()
-    const userSubscription = ref(null)
-
-    const carregarSubscricao = async () => {
-      try {
-        const res = await api.get('/subscription/subscription/')
-        userSubscription.value = res.data.results ? res.data.results[0] : (Array.isArray(res.data) ? res.data[0] : res.data)
-      } catch (err) {
-        console.error('Erro ao carregar subscrição:', err)
-      }
-    }
+    const { userSubscription, loadSubscription } = useSubscription()
 
     const escolherPlano = async (planName) => {
       try {
@@ -259,7 +251,7 @@ export default {
     }
 
     onMounted(() => {
-      carregarSubscricao()
+      loadSubscription()
     })
 
     return {

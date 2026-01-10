@@ -8,18 +8,31 @@ from .serializers import MotoSerializer, PecaSerializer
 from clientes.group_permissions import HasGroupPermission, IsAdminGroup
 
 class MotoViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gerenciamento de Motos
+    
+    Otimizado com select_related para evitar N+1 queries
+    """
     serializer_class = MotoSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, HasGroupPermission]
     
     def get_queryset(self):
+        """
+        Retorna queryset otimizado com select_related
+        Evita N+1 queries ao acessar moto.cliente
+        """
+        queryset = Moto.objects.select_related('cliente').all()
+        
+        # Filtrar por cliente se fornecido
         cliente_id = self.request.query_params.get('cliente_id')
         if cliente_id:
-            return Moto.objects.filter(cliente_id=cliente_id)
-        return Moto.objects.all()
+            queryset = queryset.filter(cliente_id=cliente_id)
+        
+        return queryset
 
     def create(self, request, *args, **kwargs):
-        """Verifica limites antes de criar moto"""
+        """Verifica limites do plano antes de criar moto"""
         # Verificar se o usuário pode criar mais motos
         user_subscription = getattr(request.user, 'subscription', None)
         if user_subscription and user_subscription.plan:

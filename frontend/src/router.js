@@ -9,7 +9,6 @@ import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import PlansView from '@/views/PlansView.vue'
 import FornecedoresView from '@/views/FornecedoresView.vue'
 import LojaView from '@/views/LojaView.vue'
-import ManuaisView from '@/views/ManuaisView.vue'
 
 const routes = [
   {
@@ -70,12 +69,6 @@ const routes = [
     path: '/loja',
     name: 'Loja',
     component: LojaView,
-    meta: { requiresAuth: true }
-  },
-  {
-    path: '/manuais',
-    name: 'Manuais',
-    component: ManuaisView,
     meta: { requiresAuth: true }
   }
 ]

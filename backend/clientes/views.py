@@ -59,38 +59,53 @@ class ClienteViewSet(viewsets.ModelViewSet):
         cliente.ativo = False
         cliente.save()
 
+
 class ProdutoLojaViewSet(viewsets.ModelViewSet):
-    """ViewSet para Produtos da Loja (Enterprise)"""
+    """
+    ViewSet para Produtos da Loja (Enterprise)
+    
+    Cada usuário gerencia apenas seus próprios produtos.
+    Validação de propriedade em nível de queryset e permissions.
+    """
     serializer_class = ProdutoLojaSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        """Cada usuário vê apenas seus próprios produtos"""
+        """
+        Cada usuário vê apenas seus próprios produtos
+        Isso já garante isolamento de dados
+        """
         return ProdutoLoja.objects.filter(user=self.request.user)
 
-    def create(self, request, *args, **kwargs):
-        """Cria um novo produto (automático user=request.user)"""
-        return super().create(request, *args, **kwargs)
-
     def perform_create(self, serializer):
-        """Define automaticamente o user como request.user"""
+        """Define automaticamente o usuário como proprietário do produto"""
         serializer.save(user=self.request.user)
 
     def perform_update(self, serializer):
-        """Atualiza o produto se pertencer ao usuário"""
+        """
+        Atualiza o produto (já garantido pelo get_queryset que é do usuário)
+        
+        IMPORTANTE: perform_update NÃO pode retornar Response!
+        A validação de propriedade já é feita pelo get_queryset()
+        """
+        # Verificação adicional de segurança (redundante mas segura)
         if serializer.instance.user != self.request.user:
-            return Response(
-                {'error': 'Você não pode editar um produto que não é seu'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Você não pode editar um produto que não é seu')
+        
         serializer.save()
 
     def perform_destroy(self, instance):
-        """Deleta o produto se pertencer ao usuário"""
+        """
+        Deleta o produto (já garantido pelo get_queryset que é do usuário)
+        
+        IMPORTANTE: perform_destroy NÃO pode retornar Response!
+        A validação de propriedade já é feita pelo get_queryset()
+        """
+        # Verificação adicional de segurança (redundante mas segura)
         if instance.user != self.request.user:
-            return Response(
-                {'error': 'Você não pode deletar um produto que não é seu'},
-                status=status.HTTP_403_FORBIDDEN
-            )
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Você não pode deletar um produto que não é seu')
+        
         instance.delete()

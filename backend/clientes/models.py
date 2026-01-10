@@ -127,10 +127,17 @@ class UserProfile(models.Model):
 
 
 @receiver(post_save, sender=User)
-def create_user_profile(sender, instance, created, **kwargs):
-    """Cria o perfil do usuário automaticamente"""
+def create_or_update_user_profile(sender, instance, created, **kwargs):
+    """
+    Signal unificado para criar e atualizar perfil do usuário.
+    
+    - Se criado: cria UserProfile e Subscription gratuita
+    - Se atualizado: garante que profile existe e está salvo
+    """
     if created:
+        # Criar perfil do usuário
         UserProfile.objects.get_or_create(user=instance)
+        
         # Criar subscrição gratuita para novos usuários
         free_plan = Plan.objects.filter(name='free').first()
         if free_plan:
@@ -141,13 +148,10 @@ def create_user_profile(sender, instance, created, **kwargs):
                     'status': 'ativa'
                 }
             )
-
-
-@receiver(post_save, sender=User)
-def save_user_profile(sender, instance, **kwargs):
-    """Salva o perfil do usuário"""
-    if hasattr(instance, 'profile'):
-        instance.profile.save()
+    else:
+        # Garantir que profile existe para usuários existentes
+        if not hasattr(instance, 'profile'):
+            UserProfile.objects.get_or_create(user=instance)
 
 
 class Plan(models.Model):
@@ -160,27 +164,31 @@ class Plan(models.Model):
     
     name = models.CharField(max_length=50, choices=PLAN_CHOICES, unique=True)
     price = models.DecimalField(max_digits=10, decimal_places=2)
-    max_clientes = models.IntegerField(default=100)
-    max_motos = models.IntegerField(default=100)
-    max_agendamentos = models.IntegerField(default=100)
-    has_app_mobile = models.BooleanField(default=False)
-    has_whatsapp = models.BooleanField(default=False)
-    has_lembretes = models.BooleanField(default=False)
-    has_fornecedores = models.BooleanField(default=False)
-    has_chat_suporte = models.BooleanField(default=False)
-    has_backup_nuvem = models.BooleanField(default=False)
-    has_ia_diagnostico = models.BooleanField(default=False)
-    has_plano_fidelidade = models.BooleanField(default=False)
-    has_agendamentos_prioritarios = models.BooleanField(default=False)
+    
+    # Limites de recursos por plano
+    max_clientes = models.IntegerField(default=100, help_text='Número máximo de clientes')
+    max_motos = models.IntegerField(default=100, help_text='Número máximo de motos')
+    max_agendamentos = models.IntegerField(default=100, help_text='Número máximo de agendamentos')
+    
+    # Funcionalidades do plano
+    has_app_mobile = models.BooleanField(default=False, help_text='Acesso via aplicativo móvel')
+    has_whatsapp = models.BooleanField(default=False, help_text='Integração com WhatsApp')
+    has_lembretes = models.BooleanField(default=False, help_text='Sistema de lembretes automáticos')
+    has_fornecedores = models.BooleanField(default=False, help_text='Gerenciamento de fornecedores')
+    has_chat_suporte = models.BooleanField(default=False, help_text='Chat de suporte prioritário')
+    has_backup_nuvem = models.BooleanField(default=False, help_text='Backup automático na nuvem')
+    has_ia_diagnostico = models.BooleanField(default=False, help_text='IA para diagnóstico de problemas')
+    has_plano_fidelidade = models.BooleanField(default=False, help_text='Sistema de fidelidade de clientes')
+    has_agendamentos_prioritarios = models.BooleanField(default=False, help_text='Agendamentos com prioridade')
     has_loja = models.BooleanField(default=False, help_text='Loja para vender produtos')
-    has_plano_fidelidade = models.BooleanField(default=False)
-    has_agendamentos_prioritarios = models.BooleanField(default=False)
     
     class Meta:
+        verbose_name = 'Plano'
         verbose_name_plural = 'Planos'
+        ordering = ['price']
     
     def __str__(self):
-        return f"{self.name} - R$ {self.price}"
+        return f"{self.get_name_display()} - R$ {self.price}"
 
 
 class Subscription(models.Model):

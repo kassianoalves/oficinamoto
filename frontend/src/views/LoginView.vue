@@ -57,7 +57,8 @@ import api from '@/api.js'
 
 export default {
   name: 'LoginView',
-  setup() {
+  emits: ['login'],
+  setup(props, { emit }) {
     const router = useRouter()
     const form = ref({
       login: '',
@@ -88,6 +89,9 @@ export default {
         // Armazenar token no localStorage
         localStorage.setItem('authToken', response.data.token)
         localStorage.setItem('user', JSON.stringify(response.data.user))
+
+        // Emitir evento para App.vue atualizar imediatamente
+        emit('login')
 
         // Redirecionar para home
         router.push('/')
