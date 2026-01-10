@@ -92,6 +92,9 @@
             <button type="button" class="btn-cancel" @click="closeModal" :disabled="loading">
               Cancelar
             </button>
+            <button type="button" class="btn-logout" @click="$emit('logout')" :disabled="loading">
+              Sair
+            </button>
           </div>
 
           <div v-if="error" class="error-message">
@@ -121,7 +124,7 @@ export default {
       default: () => ({})
     }
   },
-  emits: ['close', 'update'],
+  emits: ['close', 'update', 'logout'],
   setup(props, { emit }) {
     const showModal = computed(() => props.show)
     const loading = ref(false)
@@ -569,14 +572,15 @@ export default {
 }
 
 .btn-save,
-.btn-cancel {
+.btn-cancel,
+.btn-logout {
   flex: 1;
   padding: 10px;
   border: none;
   border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.3s;
 }
 
 .btn-save {
@@ -589,17 +593,31 @@ export default {
 }
 
 .btn-save:disabled {
-  opacity: 0.6;
+  opacity: 0.9;
   cursor: not-allowed;
 }
 
 .btn-cancel {
-  background: #f0f0f0;
+  background: #fbff00b9;
   color: #333;
 }
 
 .btn-cancel:hover:not(:disabled) {
-  background: #e0e0e0;
+  background: #fbff00;
+}
+
+.btn-logout {
+  background: #ff0026bb;
+  color: #ffffff;
+}
+
+.btn-logout:hover:not(:disabled) {
+  background: #ff0019;
+}
+
+.btn-logout:disabled {
+  opacity: 0.9;
+  cursor: not-allowed;
 }
 
 .error-message {

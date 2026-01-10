@@ -46,14 +46,13 @@
             <router-link class="nav-btn nav-btn-primary" to="/register">Cadastrar</router-link>
           </template>
           <template v-else>
-            <button @click="openProfileModal" class="btn-user-profile" :title="`Plano: ${getPlanName()}`">
+            <button @click="openProfileModal" :class="['btn-user-profile', profilePlanClass]" :title="`Plano: ${getPlanName()}`">
               <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" :class="['user-avatar', avatarBorderClass]" />
               {{ displayName }}
-              <span v-if="isPro" class="badge badge-pro">PRO</span>
-              <span v-if="isEnterprise" class="badge badge-enterprise">ENTERPRISE</span>
-              <span v-if="isFree" class="badge badge-free">GRÁTIS</span>
+              <span v-if="isPro" class="badge badge-pro plan-badge">PRO</span>
+              <span v-if="isEnterprise" class="badge badge-enterprise plan-badge">ENTERPRISE</span>
+              <span v-if="isFree" class="badge badge-free plan-badge">GRÁTIS</span>
             </button>
-            <button @click="logout" class="btn-logout">Sair</button>
           </template>
           </div>
         </div>
@@ -67,6 +66,7 @@
       :userData="userData"
       @close="showProfile = false"
       @update="handleProfileUpdate"
+      @logout="logout"
     />
     <LogoUploadModal
       :show="showLogoModal"
@@ -224,6 +224,12 @@ export default {
       return 'border-free'
     })
 
+    const profilePlanClass = computed(() => {
+      if (isEnterprise.value) return 'profile-theme-enterprise'
+      if (isPro.value) return 'profile-theme-pro'
+      return 'profile-theme-basic'
+    })
+
     const openProfileModal = () => {
       showProfile.value = true
     }
@@ -302,6 +308,7 @@ export default {
       ,avatarPlaceholder
       ,avatarInitials
       ,avatarBorderClass
+      ,profilePlanClass
       ,currentPlan
       ,isAuthPage      ,showLogoModal
       ,siteLogo
@@ -587,11 +594,18 @@ body {
 }
 
 .btn-user-profile {
-  background: rgba(195, 123, 236, 0.2);
-  border: 2px solid rgba(100, 0, 158, 0);
+  /* Variáveis por plano: definidas em profile-theme-* */
+  --profile-bg: rgba(195, 123, 236, 0.2);
+  --profile-hover: rgba(18, 1, 27, 0.3);
+  --profile-border: rgba(255, 255, 255, 0.25);
+  --profile-badge-bg: rgba(255, 255, 255, 0.2);
+  --profile-badge-color: #fff;
+
+  background: var(--profile-bg);
+  border: 2px solid var(--profile-border);
   color: white;
   padding: 0.65rem 1.1rem;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
   transition: all 0.3s ease;
@@ -600,6 +614,7 @@ body {
   align-items: center;
   gap: 0.6rem;
   white-space: nowrap;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
 }
 
 .user-avatar {
@@ -643,7 +658,7 @@ body {
 }
 
 .btn-user-profile:hover {
-  background: rgba(18, 1, 27, 0.3);
+  background: var(--profile-hover);
   transform: translateY(-3px);
 }
 
@@ -654,6 +669,37 @@ body {
   font-weight: bold;
   white-space: nowrap;
   animation: subtle-pulse 2s infinite;
+}
+
+.plan-badge {
+  background: var(--profile-badge-bg, rgba(143, 252, 0, 0.2));
+  color: var(--profile-badge-color, #fff);
+  border: 1px solid var(--profile-border, rgba(255, 255, 255, 0.2));
+}
+
+/* Temas do perfil por plano: edite cores de fundo, hover e badge de forma independente */
+.profile-theme-basic {
+  --profile-bg: rgba(0, 195, 255, 0.336);
+  --profile-hover: rgba(0, 68, 255, 0.849);
+  --profile-border: rgba(79, 172, 254, 0.45);
+  --profile-badge-bg: rgba(151, 151, 151, 0.87);
+  --profile-badge-color: #0b3a5c;
+}
+
+.profile-theme-pro {
+  --profile-bg: rgba(168, 85, 247, 0.18);
+  --profile-hover: rgba(168, 85, 247, 0.32);
+  --profile-border: rgba(168, 85, 247, 0.5);
+  --profile-badge-bg: rgba(236, 72, 153, 0.2);
+  --profile-badge-color: #3b0c44;
+}
+
+.profile-theme-enterprise {
+  --profile-bg: rgba(255, 215, 0, 0.18);
+  --profile-hover: rgba(255, 140, 0, 0.3);
+  --profile-border: rgba(255, 215, 0, 0.55);
+  --profile-badge-bg: rgba(255, 215, 0, 0.2);
+  --profile-badge-color: #3d2500;
 }
 
 .badge-pro {
@@ -667,7 +713,7 @@ body {
 }
 
 .badge-free {
-  background: rgba(255, 255, 255, 0.2);
+  background: rgba(11, 52, 165, 0.651);
   color: white;
   border: 1px solid rgba(255, 255, 255, 0.4);
 }
