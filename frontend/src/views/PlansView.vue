@@ -7,7 +7,7 @@
 
     <div class="plans-container">
       <!-- PLANO BÁSICO -->
-      <div v-if="userSubscription?.plan_name !== 'free'" class="plan-card">
+      <div v-if="userSubscription?.plan_name === 'basic'" class="plan-card">
         <div class="badge badge-free">BÁSICO</div>
         <h2>BÁSICO</h2>
         <div class="price">
@@ -54,14 +54,14 @@
         </ul>
 
         <button 
-          v-if="userSubscription?.plan_name !== 'free'"
-          @click="escolherPlano('free')" 
-          class="btn-choose"
+          v-if="userSubscription?.plan_name === 'basic'"
+          class="btn-current" 
+          disabled
         >
-          USAR BÁSICO
-        </button>
-        <button v-else class="btn-current" disabled>
           ✓ Plano Atual
+        </button>
+        <button v-else class="btn-choose btn-downgrade" disabled>
+          Plano Anterior
         </button>
       </div>
 
@@ -118,14 +118,21 @@
         </ul>
 
         <button 
-          v-if="userSubscription?.plan_name !== 'pro'"
+          v-if="userSubscription?.plan_name === 'pro'"
+          class="btn-current" 
+          disabled
+        >
+          ✓ Plano Atual
+        </button>
+        <button 
+          v-else-if="userSubscription?.plan_name === 'basic'"
           @click="escolherPlano('pro')" 
           class="btn-choose btn-pro"
         >
           FAZER UPGRADE PRO
         </button>
-        <button v-else class="btn-current" disabled>
-          ✓ Plano Atual
+        <button v-else class="btn-choose btn-downgrade" disabled>
+          Plano Superior
         </button>
       </div>
 
@@ -185,14 +192,18 @@
         </ul>
 
         <button 
-          v-if="userSubscription?.plan_name !== 'enterprise'"
+          v-if="userSubscription?.plan_name === 'enterprise'"
+          class="btn-current" 
+          disabled
+        >
+          ✓ Plano Atual
+        </button>
+        <button 
+          v-else
           @click="escolherPlano('enterprise')" 
           class="btn-choose btn-enterprise"
         >
           CONTRATAR ENTERPRISE
-        </button>
-        <button v-else class="btn-current" disabled>
-          ✓ Plano Atual
         </button>
       </div>
     </div>

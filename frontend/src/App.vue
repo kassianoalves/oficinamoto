@@ -36,7 +36,7 @@
           <li v-if="isAuthenticated && isEnterprise"><router-link to="/fornecedores">🤝 Fornecedores</router-link></li>
         </ul>
         <div class="nav-right">
-          <router-link v-if="isAuthenticated" to="/planos" class="menu-plans">💎 Upgrade</router-link>
+          <router-link v-if="isAuthenticated && !isEnterprise" to="/planos" class="menu-plans">💎 Upgrade</router-link>
           <div class="nav-actions">
           <template v-if="!isAuthenticated">
             <router-link class="nav-btn" to="/login">Login</router-link>
@@ -116,7 +116,7 @@
             
             <div class="sidebar-divider"></div>
             
-            <router-link to="/planos" class="sidebar-link sidebar-link-plans" @click="closeMobileMenu">
+            <router-link v-if="!isEnterprise" to="/planos" class="sidebar-link sidebar-link-plans" @click="closeMobileMenu">
               <span class="sidebar-icon">💎</span>
               Upgrade
             </router-link>
