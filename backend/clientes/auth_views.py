@@ -10,6 +10,24 @@ from .auth_serializers import (
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
 
+class CheckUserExistsView(APIView):
+    permission_classes = [AllowAny]
+
+    def post(self, request):
+        login = request.data.get('login', '').strip()
+        
+        if not login:
+            return Response({'exists': False}, status=status.HTTP_200_OK)
+        
+        # Verificar se é email ou username
+        if '@' in login:
+            exists = User.objects.filter(email=login).exists()
+        else:
+            exists = User.objects.filter(username=login).exists()
+        
+        return Response({'exists': exists}, status=status.HTTP_200_OK)
+
+
 class RegisterView(APIView):
     permission_classes = [AllowAny]
 

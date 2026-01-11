@@ -13,9 +13,9 @@ function getApiBaseUrl() {
   const hostname = window.location.hostname
   const port = window.location.port ? `:${window.location.port}` : ''
   
-  // Se estiver em localhost:5174 (Vite dev), aponta para localhost:8000 (Django)
+  // Se estiver em localhost em desenvolvimento (porta 5173 do Vite), aponta para localhost:8000 (Django)
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
-    if (window.location.port === '5174') {
+    if (window.location.port === '5173' || window.location.port === '5174') {
       return `${protocol}//localhost:8000/api`
     }
   }

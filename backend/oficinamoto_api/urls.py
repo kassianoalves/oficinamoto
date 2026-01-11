@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
 from clientes.views import ClienteViewSet, ProdutoLojaViewSet
-from clientes.auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView, UserDetailView, LogoutView
+from clientes.auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView, UserDetailView, LogoutView, CheckUserExistsView
 from motos.views import MotoViewSet, PecaViewSet
 from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet, PecaViewSet as PecaManuViewSet, ItemAgendamentoViewSet
 
@@ -57,6 +57,7 @@ router.register(r'produtos-loja', ProdutoLojaViewSet, basename='produto-loja')
 
 # Rotas de autenticação
 auth_urls = [
+    path('check-user/', CheckUserExistsView.as_view(), name='check-user'),
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('forgot-password/', ForgotPasswordView.as_view(), name='forgot-password'),

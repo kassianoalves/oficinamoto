@@ -9,52 +9,71 @@
         <h2>Entrar na Conta</h2>
 
         <form @submit.prevent="login">
+          <!-- Etapa 1: Verificação de usuário/email -->
           <div class="form-group">
-            <label for="login">Login (Email ou Usuário):</label>
+            <label for="login">Login:</label>
             <input
+              ref="loginInput"
               v-model="form.login"
               type="text"
               id="login"
-              placeholder="seu email ou usuário"
+              placeholder="usuário/email"
+              @input="checkUserExistsDebounced"
               required
             >
+            <p v-if="checkingUser" class="loading-text">🔍 Verificando...</p>
           </div>
 
-          <div class="form-group">
-            <label for="password">Senha:</label>
-            <input
-              v-model="form.password"
-              type="password"
-              id="password"
-              placeholder="sua senha"
-              required
-            >
-          </div>
+          <!-- Etapa 2: Campos de senha (mostrados apenas se usuário existe) -->
+          <transition name="fade">
+            <div v-if="userExists">
+              <div class="form-group">
+                <label for="password">Senha:</label>
+                <input
+                  ref="passwordInput"
+                  v-model="form.password"
+                  type="password"
+                  id="password"
+                  placeholder="senha"
+                  required
+                  @keyup.enter="login"
+                >
+              </div>
 
-          <div class="form-group checkbox-group">
-            <label for="rememberMe" class="checkbox-label">
-              <input
-                v-model="form.rememberMe"
-                type="checkbox"
-                id="rememberMe"
-              >
-              <span>Manter-se logado</span>
-            </label>
-          </div>
+              <div class="form-group checkbox-group">
+                <label for="rememberMe" class="checkbox-label">
+                  <input
+                    v-model="form.rememberMe"
+                    type="checkbox"
+                    id="rememberMe"
+                  >
+                  <span>Manter-se logado</span>
+                </label>
+              </div>
 
-          <button type="submit" class="btn-submit" :disabled="loading">
-            {{ loading ? 'Entrando...' : 'Entrar' }}
-          </button>
+              <button type="submit" class="btn-submit" :disabled="loading">
+                {{ loading ? 'Entrando...' : 'Entrar' }}
+              </button>
+
+              <div class="auth-links">
+                <router-link to="/forgot-password">Esqueceu a senha?</router-link>
+              </div>
+            </div>
+          </transition>
+
+          <!-- Opção de criar conta (mostrada se usuário NÃO existe) -->
+          <transition name="fade">
+            <div v-if="!userExists && form.login && !checkingUser" class="create-account-section">
+              <p class="not-found-message">👤 Usuário não encontrado</p>
+              <router-link to="/register" class="btn-create-account">
+                Criar Conta
+              </router-link>
+            </div>
+          </transition>
         </form>
 
         <div v-if="error" class="error-message">
           ❌ {{ error }}
-        </div>
-
-        <div class="auth-links">
-          <router-link to="/forgot-password">Esqueceu a senha?</router-link>
-          <span> | </span>
-          <router-link to="/register">Criar Conta</router-link>
         </div>
       </div>
     </div>
@@ -62,7 +81,7 @@
 </template>
 
 <script>
-import { ref } from 'vue'
+import { ref, nextTick } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api.js'
 import { authStorage } from '@/utils/authStorage.js'
@@ -72,6 +91,10 @@ export default {
   emits: ['login'],
   setup(props, { emit }) {
     const router = useRouter()
+    const loginInput = ref(null)
+    const passwordInput = ref(null)
+    let debounceTimer = null
+
     const form = ref({
       login: '',
       password: '',
@@ -79,6 +102,54 @@ export default {
     })
     const error = ref('')
     const loading = ref(false)
+    const userExists = ref(false)
+    const checkingUser = ref(false)
+
+    const checkUserExistsDebounced = () => {
+      // Limpar timer anterior
+      if (debounceTimer) {
+        clearTimeout(debounceTimer)
+      }
+
+      // Novo timer com 300ms de delay
+      debounceTimer = setTimeout(() => {
+        checkUserExists()
+      }, 300)
+    }
+
+    const checkUserExists = async () => {
+      const loginValue = form.value.login.trim()
+      
+      if (!loginValue) {
+        userExists.value = false
+        return
+      }
+
+      checkingUser.value = true
+      error.value = ''
+
+      try {
+        console.log('Verificando usuário:', loginValue)
+        const response = await api.post('/auth/check-user/', {
+          login: loginValue
+        })
+        console.log('Resposta do servidor:', response.data)
+        userExists.value = response.data.exists
+        
+        // Auto-focar no campo de senha quando usuário existir
+        if (response.data.exists) {
+          await nextTick()
+          passwordInput.value?.focus()
+        }
+      } catch (err) {
+        console.error('Erro ao verificar usuário:', err)
+        console.error('Status:', err.response?.status)
+        console.error('Data:', err.response?.data)
+        error.value = 'Erro ao verificar usuário. Tente novamente.'
+      } finally {
+        checkingUser.value = false
+      }
+    }
 
     const login = async () => {
       error.value = ''
@@ -127,7 +198,13 @@ export default {
       form,
       error,
       loading,
-      login
+      userExists,
+      checkingUser,
+      login,
+      checkUserExists,
+      checkUserExistsDebounced,
+      loginInput,
+      passwordInput
     }
   }
 }
@@ -327,6 +404,43 @@ export default {
   font-size: 0.9rem;
 }
 
+.loading-text {
+  color: #667eea;
+  font-size: 0.85rem;
+  margin-top: 0.3rem;
+  font-weight: 500;
+}
+
+.create-account-section {
+  text-align: center;
+  margin-top: 1.2rem;
+  padding-top: 1.2rem;
+  border-top: 1px solid #eee;
+}
+
+.not-found-message {
+  color: #666;
+  font-size: 0.95rem;
+  margin-bottom: 1rem;
+}
+
+.btn-create-account {
+  display: inline-block;
+  padding: 0.65rem 1.5rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  text-decoration: none;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btn-create-account:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(102, 126, 234, 0.3);
+}
+
 .auth-links {
   text-align: center;
   margin-top: 1.5rem;
@@ -348,6 +462,26 @@ export default {
 .auth-links span {
   margin: 0 0.5rem;
   color: #ddd;
+}
+
+/* Transições de fade */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease, max-height 0.3s ease;
+  max-height: 500px;
+  overflow: hidden;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+  max-height: 0;
+}
+
+.fade-enter-to,
+.fade-leave-from {
+  opacity: 1;
+  max-height: 500px;
 }
 
 /* Responsivo para Tablets */
