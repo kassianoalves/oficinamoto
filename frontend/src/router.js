@@ -62,7 +62,7 @@ const routes = [
   },
   {
     path: '/planos',
-    name: 'Planos',
+    name: 'Upgrade',
     component: PlansView,
     meta: { requiresAuth: true }
   },
@@ -80,6 +80,8 @@ const routes = [
   }
 ]
 
+import { authStorage } from './utils/authStorage.js'
+
 const router = createRouter({
   history: createWebHistory(),
   routes
@@ -87,7 +89,7 @@ const router = createRouter({
 
 // Guard de autenticação
 router.beforeEach((to, from, next) => {
-  const isAuthenticated = !!localStorage.getItem('authToken')
+  const isAuthenticated = authStorage.isAuthenticated()
   
   if (to.meta.requiresAuth && !isAuthenticated) {
     next('/login')

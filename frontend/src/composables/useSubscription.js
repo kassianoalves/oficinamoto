@@ -105,7 +105,7 @@ export const useSubscription = () => {
     const allItems = [
       ...baseItems,
       ...proItems,
-      { name: 'Planos', path: '/planos', icon: '💎', requireAuth: true }
+      { name: 'Upgrade', path: '/planos', icon: '💎', requireAuth: true }
     ]
 
     // Filtrar baseado no plano

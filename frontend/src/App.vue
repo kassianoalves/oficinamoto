@@ -1,4 +1,4 @@
-<template>
+﻿<template>
   <div id="app" class="app-container">
     <nav v-if="!isAuthPage" class="navbar">
       <!-- Botão Hambúrguer Mobile -->
@@ -36,7 +36,7 @@
           <li v-if="isAuthenticated && isEnterprise"><router-link to="/fornecedores">🤝 Fornecedores</router-link></li>
         </ul>
         <div class="nav-right">
-          <router-link v-if="isAuthenticated" to="/planos" class="menu-plans">💎 Planos</router-link>
+          <router-link v-if="isAuthenticated" to="/planos" class="menu-plans">💎 Upgrade</router-link>
           <div class="nav-actions">
           <template v-if="!isAuthenticated">
             <router-link class="nav-btn" to="/login">Login</router-link>
@@ -50,7 +50,7 @@
                 <span class="user-plan">
                   <span v-if="isPro" class="plan-label plan-pro">PRO</span>
                   <span v-if="isEnterprise" class="plan-label plan-enterprise">ENTERPRISE</span>
-                  <span v-if="isFree" class="plan-label plan-free">GRÁTIS</span>
+                  <span v-if="isFree" class="plan-label plan-basico">BÁSICO</span>
                 </span>
               </div>
             </button>
@@ -118,7 +118,7 @@
             
             <router-link to="/planos" class="sidebar-link sidebar-link-plans" @click="closeMobileMenu">
               <span class="sidebar-icon">💎</span>
-              Planos
+              Upgrade
             </router-link>
             
             <button @click="openProfileModal; closeMobileMenu()" class="sidebar-link sidebar-button">
@@ -173,6 +173,7 @@
 import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import api from '@/api.js'
+import { authStorage } from '@/utils/authStorage.js'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ProfileModal from '@/components/ProfileModal.vue'
 import LogoUploadModal from '@/components/LogoUploadModal.vue'
@@ -225,7 +226,7 @@ export default {
     const getPlanName = () => {
       const planName = userSubscription.value?.plan_name
       const names = {
-        'free': 'Plano Gratuito',
+        'free': 'Plano Básico',
         'pro': 'Plano PRO',
         'enterprise': 'Plano Enterprise'
       }
@@ -233,14 +234,14 @@ export default {
     }
 
     const checkAuth = async () => {
-      const token = localStorage.getItem('authToken')
-      const user = localStorage.getItem('user')
+      const token = authStorage.getToken()
+      const user = authStorage.getUser()
       
       isAuthenticated.value = !!token
       
       if (user) {
         try {
-          userData.value = JSON.parse(user)
+          userData.value = user
           username.value = userData.value.username || userData.value.email
           
           // Carregar subscrição do usuário (state centralizado)
@@ -279,8 +280,8 @@ export default {
       userData.value = updatedUser
       username.value = updatedUser.username || updatedUser.email
       
-      // Atualizar localStorage com os dados mais recentes
-      localStorage.setItem('user', JSON.stringify(updatedUser))
+      // Atualizar storage com os dados mais recentes
+      authStorage.setUser(updatedUser)
     }
 
     const openLogoModal = () => {
@@ -312,8 +313,7 @@ export default {
 
     const logout = () => {
       closeMobileMenu()
-      localStorage.removeItem('authToken')
-      localStorage.removeItem('user')
+      authStorage.clear()
       isAuthenticated.value = false
       username.value = ''
       userData.value = {}
@@ -336,9 +336,9 @@ export default {
       document.body.style.overflow = ''
     }
 
-    // Watcher para monitorar mudanças no localStorage (para atualizar menu após login)
+    // Watcher para monitorar mudanças no storage (para atualizar menu após login)
     watch(
-      () => localStorage.getItem('authToken'),
+      () => authStorage.getToken(),
       async (newToken) => {
         if (newToken) {
           await checkAuth()
@@ -958,6 +958,12 @@ body {
 
 .plan-label.plan-free {
   color: #64b5f6;
+}
+
+.plan-label.plan-basico {
+  background: rgba(100, 181, 246, 0.25);
+  color: #a8d8ff;
+  border: 1px solid rgba(100, 181, 246, 0.5);
 }
 
 .plan-label.plan-pro {

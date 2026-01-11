@@ -6,10 +6,10 @@
     </div>
 
     <div class="plans-container">
-      <!-- PLANO GRATUITO -->
-      <div class="plan-card">
+      <!-- PLANO BÁSICO -->
+      <div v-if="userSubscription?.plan_name !== 'free'" class="plan-card">
         <div class="badge badge-free">BÁSICO</div>
-        <h2>GRATUITO</h2>
+        <h2>BÁSICO</h2>
         <div class="price">
           <span>R$00.00</span>
         </div>
@@ -58,7 +58,7 @@
           @click="escolherPlano('free')" 
           class="btn-choose"
         >
-          USAR GRATUITO
+          USAR BÁSICO
         </button>
         <button v-else class="btn-current" disabled>
           ✓ Plano Atual
@@ -214,7 +214,7 @@ export default {
     const escolherPlano = async (planName) => {
       try {
         if (planName === 'free') {
-          success('Você está usando o plano Gratuito')
+          success('Você está usando o plano Básico')
           return
         }
 

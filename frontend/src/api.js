@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { authStorage } from './utils/authStorage.js'
 
 // Função para detectar a URL da API dinamicamente
 function getApiBaseUrl() {
@@ -63,7 +64,7 @@ updateApiConfig()
 
 // Interceptor para adicionar token em todas as requisições
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('authToken')
+  const token = authStorage.getToken()
   if (token) {
     config.headers.Authorization = `Token ${token}`
   }
@@ -73,3 +74,4 @@ api.interceptors.request.use((config) => {
 })
 
 export default api
+

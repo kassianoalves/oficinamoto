@@ -31,6 +31,17 @@
             >
           </div>
 
+          <div class="form-group checkbox-group">
+            <label for="rememberMe" class="checkbox-label">
+              <input
+                v-model="form.rememberMe"
+                type="checkbox"
+                id="rememberMe"
+              >
+              <span>Manter-se logado</span>
+            </label>
+          </div>
+
           <button type="submit" class="btn-submit" :disabled="loading">
             {{ loading ? 'Entrando...' : 'Entrar' }}
           </button>
@@ -54,6 +65,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api.js'
+import { authStorage } from '@/utils/authStorage.js'
 
 export default {
   name: 'LoginView',
@@ -62,7 +74,8 @@ export default {
     const router = useRouter()
     const form = ref({
       login: '',
-      password: ''
+      password: '',
+      rememberMe: false
     })
     const error = ref('')
     const loading = ref(false)
@@ -86,9 +99,12 @@ export default {
 
         const response = await api.post('/auth/login/', payload)
 
-        // Armazenar token no localStorage
-        localStorage.setItem('authToken', response.data.token)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
+        // Definir tipo de armazenamento baseado na checkbox
+        authStorage.setStorageType(form.value.rememberMe ? 'local' : 'session')
+
+        // Armazenar token e usuário
+        authStorage.setToken(response.data.token)
+        authStorage.setUser(response.data.user)
 
         // Emitir evento para App.vue atualizar imediatamente
         emit('login')
@@ -198,6 +214,83 @@ export default {
   outline: none;
   border-color: #667eea;
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.checkbox-group {
+  margin: 1.2rem 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+}
+
+.checkbox-group label {
+  display: flex;
+  margin-bottom: 0;
+}
+
+.checkbox-label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 0.7rem;
+  cursor: pointer;
+  font-weight: 500;
+  color: #333;
+  user-select: none;
+  transition: all 0.2s ease;
+  padding: 0;
+  margin: 0;
+  white-space: nowrap;
+}
+
+.checkbox-label:hover {
+  color: #667eea;
+}
+
+.checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-width: 18px;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 2px solid #ddd;
+  border-radius: 3px;
+  background-color: white;
+  position: relative;
+  margin: 0;
+  padding: 0;
+  top: 0;
+}
+
+.checkbox-label input[type="checkbox"]:hover {
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.checkbox-label input[type="checkbox"]:checked {
+  background-color: #667eea;
+  border-color: #667eea;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M13.78 4.22a.75.75 0 010 1.06l-7.25 7.25a.75.75 0 11-1.06-1.06l7.25-7.25a.75.75 0 011.06 0z'/%3E%3Cpath d='M2.22 9.22a.75.75 0 011.06 0l2.97 2.97a.75.75 0 11-1.06 1.06L2.22 10.28a.75.75 0 010-1.06z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px;
+}
+
+.checkbox-label input[type="checkbox"]:focus {
+  outline: none;
+  border-color: #667eea;
+  box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
+}
+
+.checkbox-label span {
+  font-size: 0.95rem;
+  letter-spacing: 0.2px;
+  margin: 0;
+  line-height: 1.2;
 }
 
 .btn-submit {

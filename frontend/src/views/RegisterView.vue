@@ -78,6 +78,7 @@
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import api from '@/api.js'
+import { authStorage } from '@/utils/authStorage.js'
 
 export default {
   name: 'RegisterView',
@@ -101,9 +102,10 @@ export default {
       try {
         const response = await api.post('/auth/register/', form.value)
         
-        // Armazenar token no localStorage
-        localStorage.setItem('authToken', response.data.token)
-        localStorage.setItem('user', JSON.stringify(response.data.user))
+        // Após registro, usar sessionStorage por padrão (não persistir automaticamente)
+        authStorage.setStorageType('session')
+        authStorage.setToken(response.data.token)
+        authStorage.setUser(response.data.user)
         
         success.value = true
         

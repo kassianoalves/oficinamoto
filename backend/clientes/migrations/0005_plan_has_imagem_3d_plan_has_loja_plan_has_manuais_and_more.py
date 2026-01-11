@@ -32,7 +32,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='plan',
             name='name',
-            field=models.CharField(choices=[('free', 'Gratuito'), ('pro', 'PRO'), ('enterprise', 'Enterprise')], max_length=50, unique=True),
+            field=models.CharField(choices=[('free', 'Básico'), ('pro', 'PRO'), ('enterprise', 'Enterprise')], max_length=50, unique=True),
         ),
         migrations.CreateModel(
             name='Imagem3D',

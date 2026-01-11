@@ -8,7 +8,7 @@
     <!-- Badge do Plano
     <div class="plan-badge" :class="{ 'plan-pro': userPlan === 'pro' }">
       <span v-if="userPlan === 'pro'">⭐ Plano PRO Ativo</span>
-      <span v-else>📦 Plano Gratuito - <router-link to="/planos" class="upgrade-link">Fazer Upgrade</router-link></span>
+      <span v-else>📦 Plano Básico - <router-link to="/planos" class="upgrade-link">Fazer Upgrade</router-link></span>
     </div> -->
 
     <div class="stats-grid">

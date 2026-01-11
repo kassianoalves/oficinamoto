@@ -112,6 +112,7 @@ import api from '@/api'
 import { useToast } from '@/composables/useToast'
 import { makeInitialsAvatar, withCacheBust } from '@/utils/avatarUtils'
 import { formatTelefone } from '@/utils/formatters'
+import { authStorage } from '@/utils/authStorage.js'
 
 export default {
   name: 'ProfileModal',
@@ -211,7 +212,7 @@ export default {
         if (updated.avatar) updated.avatar = withCacheBust(updated.avatar)
         if (updated.avatar_thumb) updated.avatar_thumb = withCacheBust(updated.avatar_thumb)
 
-        localStorage.setItem('user', JSON.stringify(updated))
+        authStorage.setUser(updated)
         showToast('Perfil atualizado com sucesso!', 'success')
         emit('update', updated)
         closeModal()
