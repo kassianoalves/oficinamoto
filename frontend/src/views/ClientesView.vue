@@ -21,7 +21,7 @@
           <input v-model="form.nome" type="text" placeholder="Nome completo" required minlength="3">
           <input 
             v-model="form.cpf" 
-            type="number" 
+            type="cpf" 
             placeholder="CPF (000.000.000-00)" 
             required 
             maxlength="14"
@@ -38,6 +38,21 @@
           >
           <input v-model="form.endereco" type="text" placeholder="Endereço" required>
           <input v-model="form.cidade" type="text" placeholder="Cidade" required>
+        </div>
+
+        <div v-if="!editingId" class="moto-extra">
+          <div class="moto-extra-header">
+            <h4>🏍️ Cadastro Moto</h4>
+            <span class="hint">Preencha para cadastrar a moto junto com o cliente.</span>
+          </div>
+          <div class="form-grid moto-grid">
+            <input v-model="motoForm.marca" type="text" placeholder="Marca">
+            <input v-model="motoForm.modelo" type="text" placeholder="Modelo">
+            <input v-model.number="motoForm.ano" type="number" placeholder="Ano" min="1900" max="2099">
+            <input v-model="motoForm.cor" type="text" placeholder="Cor">
+            <input v-model="motoForm.placa" type="text" placeholder="Placa (ABC1D23)" maxlength="8">
+            <input v-model="motoForm.numero_serie" type="text" placeholder="Número de série">
+          </div>
         </div>
         <div class="form-actions">
           <button type="submit" class="btn btn-primary">{{ editingId ? 'Atualizar' : 'Salvar' }}</button>
@@ -62,6 +77,10 @@
           <button @click="deletarCliente(cliente.id)" class="btn btn-delete">🗑️ Deletar</button>
         </div>
       </div>
+    </div>
+
+    <div v-else class="empty-state">
+      <p>Nenhum cliente cadastrado. Clique em "Novo Cliente" para começar.</p>
     </div>
 
     <!-- Modal de Histórico -->
@@ -120,9 +139,6 @@
       </div>
     </div>
 
-    <div v-else class="empty-state">
-      <p>Nenhum cliente cadastrado. Clique em "Novo Cliente" para começar.</p>
-    </div>
   </div>
 </template>
 
@@ -152,11 +168,28 @@ export default {
       endereco: '',
       cidade: ''
     })
+    const motoForm = ref({
+      marca: '',
+      modelo: '',
+      ano: '',
+      cor: '',
+      placa: '',
+      numero_serie: ''
+    })
+
+    const motoPreenchida = computed(() =>
+      Object.values(motoForm.value).some(v => `${v ?? ''}`.trim() !== '')
+    )
+
+    const motoCompleta = computed(() =>
+      ['marca', 'modelo', 'ano', 'cor', 'placa', 'numero_serie']
+        .every(campo => `${motoForm.value[campo] ?? ''}`.trim() !== '')
+    )
 
     const clientesFiltrados = computed(() => {
       if (!filtro.value) return clientes.value
       const termo = filtro.value.toLowerCase()
-      return clientes.value.filter(c => 
+      return clientes.value.filter(c =>
         c.nome.toLowerCase().includes(termo) ||
         c.cpf.replace(/\D/g, '').includes(termo.replace(/\D/g, '')) ||
         c.telefone.replace(/\D/g, '').includes(termo.replace(/\D/g, ''))
@@ -205,15 +238,32 @@ export default {
           await api.put(`/clientes/${editingId.value}/`, form.value)
           success('Cliente atualizado com sucesso!')
         } else {
-          await api.post('/clientes/', form.value)
+          if (motoPreenchida.value && !motoCompleta.value) {
+            error('Preencha todos os campos da moto ou deixe-os em branco.')
+            return
+          }
+
+          const clienteRes = await api.post('/clientes/', form.value)
           success('Cliente cadastrado com sucesso!')
+
+          if (motoPreenchida.value) {
+            const payloadMoto = {
+              ...motoForm.value,
+              cliente: clienteRes.data.id,
+              ano: Number(motoForm.value.ano)
+            }
+            await api.post('/motos/', payloadMoto)
+            success('Moto cadastrada junto com o cliente!')
+          }
         }
         resetForm()
         carregarClientes()
       } catch (err) {
         console.error('Erro ao salvar cliente:', err)
-        const errorMsg = err.response?.data?.cpf?.[0] || 
-                        err.response?.data?.detail || 
+        const errorMsg = err.response?.data?.placa?.[0] ||
+                        err.response?.data?.numero_serie?.[0] ||
+                        err.response?.data?.cpf?.[0] ||
+                        err.response?.data?.detail ||
                         'Erro ao salvar cliente'
         error(errorMsg)
       }
@@ -223,6 +273,14 @@ export default {
       editingId.value = cliente.id
       form.value = { ...cliente }
       showForm.value = true
+      motoForm.value = {
+        marca: '',
+        modelo: '',
+        ano: '',
+        cor: '',
+        placa: '',
+        numero_serie: ''
+      }
     }
 
     const deletarCliente = async (id) => {
@@ -247,30 +305,32 @@ export default {
         endereco: '',
         cidade: ''
       }
+      motoForm.value = {
+        marca: '',
+        modelo: '',
+        ano: '',
+        cor: '',
+        placa: '',
+        numero_serie: ''
+      }
       editingId.value = null
       showForm.value = false
     }
 
-    const verHistorico = async (cliente) => {
-      clienteSelecionado.value = cliente
-      showHistorico.value = true
-      
+    const carregarHistoricoCliente = async (clienteId) => {
       try {
-        // Carregar motos do cliente
         const resMotos = await api.get('/motos/')
         const todasMotos = resMotos.data.results || resMotos.data || []
-        motosCliente.value = todasMotos.filter(m => m.cliente === cliente.id)
+        motosCliente.value = todasMotos.filter(m => m.cliente === clienteId)
 
-        // Carregar manutenções concluídas das motos do cliente
         const resAgendamentos = await api.get('/agendamentos/')
         const todosAgendamentos = resAgendamentos.data.results || resAgendamentos.data || []
         const motosIds = motosCliente.value.map(m => m.id)
-        const agendamentosCliente = todosAgendamentos.filter(a => 
+        const agendamentosCliente = todosAgendamentos.filter(a =>
           a.status === 'concluido' && motosIds.includes(a.moto)
         )
         manutencoesCliente.value = agendamentosCliente
 
-        // Carregar peças usadas nesses agendamentos
         const resPecas = await api.get('/itens-agendamento/')
         const todasPecas = resPecas.data.results || resPecas.data || []
         const agendamentosIds = agendamentosCliente.map(a => a.id)
@@ -279,6 +339,12 @@ export default {
         console.error('Erro ao carregar histórico:', err)
         error('Erro ao carregar histórico do cliente')
       }
+    }
+
+    const verHistorico = async (cliente) => {
+      clienteSelecionado.value = cliente
+      showHistorico.value = true
+      await carregarHistoricoCliente(cliente.id)
     }
 
     const closeHistorico = () => {
@@ -328,6 +394,7 @@ export default {
       motosCliente,
       manutencoesCliente,
       pecasUsadas,
+      motoForm,
       salvarCliente,
       editarCliente,
       deletarCliente,
@@ -413,6 +480,32 @@ export default {
 .form-container h3 {
   margin-bottom: 1.5rem;
   color: #333;
+}
+
+.moto-extra {
+  margin-top: 1rem;
+  background: #f9fafb;
+  border: 1px dashed #e0e7ff;
+  padding: 1rem;
+  border-radius: 10px;
+}
+
+.moto-extra-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.moto-extra-header h4 {
+  margin: 0;
+  color: #4b5563;
+}
+
+.hint {
+  color: #6b7280;
+  font-size: 0.9rem;
 }
 
 .form-grid {
@@ -724,6 +817,10 @@ export default {
 .peca-detail-label {
   font-weight: 600;
   color: #333;
+}
+
+.moto-grid {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
 }
 
 @media (max-width: 768px) {
