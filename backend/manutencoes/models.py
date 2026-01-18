@@ -1,5 +1,7 @@
 from django.db import models
 from motos.models import Moto
+from django.core.exceptions import ValidationError
+from django.conf import settings
 
 class Peca(models.Model):
     """Inventário de peças disponíveis"""
@@ -9,9 +11,11 @@ class Peca(models.Model):
     quantidade = models.IntegerField(default=0)
     preco_unitario = models.DecimalField(max_digits=10, decimal_places=2)
     categoria = models.CharField(max_length=100, blank=True, help_text='Ex: Óleo, Filtro, Corrente, Freio')
+    marca = models.CharField(max_length=255, blank=True, help_text='Marca do produto')
     fornecedor = models.CharField(max_length=255, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
     ativa = models.BooleanField(default=True)
+    sku = models.CharField(max_length=50, unique=True, default='', blank=True)
 
     class Meta:
         verbose_name = 'Peça'
@@ -20,6 +24,36 @@ class Peca(models.Model):
 
     def __str__(self):
         return f'{self.nome} ({self.codigo}) - Qtd: {self.quantidade}'
+
+    def clean(self):
+        # Validar máximo de 2 fotos
+        if self.pk:
+            fotos_count = FotoPeca.objects.filter(peca=self).count()
+            if fotos_count > 2:
+                raise ValidationError('Máximo de 2 fotos por peça')
+
+
+class FotoPeca(models.Model):
+    """Fotos de peças para venda na loja"""
+    peca = models.ForeignKey(Peca, on_delete=models.CASCADE, related_name='fotos')
+    imagem = models.ImageField(upload_to='pecas/')
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Foto de Peça'
+        verbose_name_plural = 'Fotos de Peças'
+        ordering = ['data_criacao']
+        unique_together = ['peca', 'imagem']
+
+    def clean(self):
+        # Validar máximo de 2 fotos por peça
+        if self.peca:
+            fotos_count = FotoPeca.objects.filter(peca=self.peca).exclude(pk=self.pk).count()
+            if fotos_count >= 2:
+                raise ValidationError('Máximo de 2 fotos por peça')
+
+    def __str__(self):
+        return f'Foto - {self.peca.nome}'
 
 
 class ItemAgendamento(models.Model):
@@ -77,7 +111,7 @@ class Agendamento(models.Model):
     prioritario = models.BooleanField(default=False, help_text='Agendamento prioritário (PRO)')
     status = models.CharField(
         max_length=20,
-        choices=[('pendente', 'Pendente'), ('confirmado', 'Confirmado'), ('concluido', 'Concluído'), ('cancelado', 'Cancelado')],
+        choices=[('pendente', 'Pendente'), ('concluido', 'Concluído'), ('cancelado', 'Cancelado')],
         default='pendente'
     )
     data_criacao = models.DateTimeField(auto_now_add=True)
@@ -138,3 +172,54 @@ class PontosFidelidade(models.Model):
         self.total_gasto += valor_gasto
         self.save()
         return novos_pontos
+
+
+class ItemCarrinho(models.Model):
+    """Itens do carrinho de compras"""
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='itens_carrinho',
+        null=True,
+        blank=True,
+        help_text='Null para carrinhos anônimos (localStorage)'
+    )
+    sessao_id = models.CharField(
+        max_length=255,
+        null=True,
+        blank=True,
+        help_text='ID de sessão para usuários não logados'
+    )
+    peca = models.ForeignKey(Peca, on_delete=models.CASCADE)
+    quantidade = models.IntegerField(default=1)
+    preco_unitario = models.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        help_text='Preço no momento da adição ao carrinho'
+    )
+    data_adicao = models.DateTimeField(auto_now_add=True)
+    data_atualizacao = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = 'Item do Carrinho'
+        verbose_name_plural = 'Itens do Carrinho'
+        ordering = ['-data_adicao']
+        unique_together = [['usuario', 'peca'], ['sessao_id', 'peca']]
+
+    def __str__(self):
+        user_ref = self.usuario.username if self.usuario else f'Sessão: {self.sessao_id}'
+        return f'{user_ref} - {self.peca.nome} x{self.quantidade}'
+
+    @property
+    def subtotal(self):
+        return self.quantidade * self.preco_unitario
+
+    def clean(self):
+        # Validar que tem usuário OU sessão_id
+        if not self.usuario and not self.sessao_id:
+            raise ValidationError('Item deve ter usuário ou sessão_id')
+        
+        # Validar estoque disponível
+        if self.quantidade > self.peca.quantidade:
+            raise ValidationError(f'Estoque insuficiente. Disponível: {self.peca.quantidade}')
+

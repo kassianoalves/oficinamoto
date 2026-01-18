@@ -9,7 +9,7 @@ from rest_framework.decorators import api_view
 from clientes.views import ClienteViewSet, ProdutoLojaViewSet
 from clientes.auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView, UserDetailView, LogoutView, CheckUserExistsView
 from motos.views import MotoViewSet, PecaViewSet
-from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet, PecaViewSet as PecaManuViewSet, ItemAgendamentoViewSet
+from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet, PecaViewSet as PecaManuViewSet, ItemAgendamentoViewSet, CarrinhoViewSet
 
 # View para retornar a URL da API dinamicamente
 @api_view(['GET'])
@@ -53,6 +53,7 @@ router.register(r'agendamentos', AgendamentoViewSet, basename='agendamento')
 router.register(r'lembretes', LembreteViewSet, basename='lembrete')
 router.register(r'pontos-fidelidade', PontosFidelidadeViewSet, basename='pontos-fidelidade')
 router.register(r'produtos-loja', ProdutoLojaViewSet, basename='produto-loja')
+router.register(r'carrinho', CarrinhoViewSet, basename='carrinho')
 
 
 # Rotas de autenticação

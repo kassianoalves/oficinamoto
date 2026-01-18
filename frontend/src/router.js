@@ -56,7 +56,7 @@ const routes = [
   },
   {
     path: '/pecas',
-    name: 'Peças',
+    name: 'Estoque',
     component: PecasView,
     meta: { requiresAuth: true }
   },

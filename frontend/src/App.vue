@@ -27,7 +27,7 @@
       
           <!-- Menu PRO (PRO e Enterprise) -->
           <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
-          <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/pecas">📦 Peças</router-link></li>
+          <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/pecas">📦 Estoque</router-link></li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/loja">🛒 Loja</router-link></li>
           
@@ -37,6 +37,17 @@
         </ul>
         <div class="nav-right">
           <router-link v-if="isAuthenticated && !isEnterprise" to="/planos" class="menu-plans">💎 Upgrade</router-link>
+          
+          <!-- Ícone do Carrinho -->
+          <button v-if="isAuthenticated && (isPro || isEnterprise)" @click="toggleCarrinho" class="btn-carrinho" title="Meu Carrinho">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="9" cy="21" r="1"/>
+              <circle cx="20" cy="21" r="1"/>
+              <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+            </svg>
+            <span v-if="totalItensCarrinho > 0" class="carrinho-badge">{{ totalItensCarrinho }}</span>
+          </button>
+          
           <div class="nav-actions">
           <template v-if="!isAuthenticated">
             <router-link class="nav-btn" to="/login">Login</router-link>
@@ -98,7 +109,7 @@
             
             <router-link v-if="isPro || isEnterprise" to="/pecas" class="sidebar-link sidebar-link-pro" @click="closeMobileMenu">
               <span class="sidebar-icon">📦</span>
-              Peças
+              Estoque
               <span class="sidebar-tag">PRO</span>
             </router-link>
             
@@ -151,6 +162,10 @@
         </transition>
       </router-view>
     </main>
+    
+    <!-- Drawer do Carrinho -->
+    <CarrinhoDrawer v-if="isAuthenticated && (isPro || isEnterprise)" />
+    
     <ProfileModal 
       :show="showProfile" 
       :userData="userData"
@@ -177,8 +192,10 @@ import { authStorage } from '@/utils/authStorage.js'
 import ToastNotification from '@/components/ToastNotification.vue'
 import ProfileModal from '@/components/ProfileModal.vue'
 import LogoUploadModal from '@/components/LogoUploadModal.vue'
+import CarrinhoDrawer from '@/components/CarrinhoDrawer.vue'
 import { makeInitialsAvatar, withCacheBust } from '@/utils/avatarUtils'
 import { useSubscription } from '@/composables/useSubscription'
+import { useCarrinho } from '@/composables/useCarrinho.js'
 // import logoImage from '@/assets/logo.png'  // Descomente após adicionar logo.png em src/assets/
 
 export default {
@@ -186,7 +203,8 @@ export default {
   components: {
     ToastNotification,
     ProfileModal,
-    LogoUploadModal
+    LogoUploadModal,
+    CarrinhoDrawer
   },
   setup() {
     const router = useRouter()
@@ -196,8 +214,13 @@ export default {
     const showProfile = ref(false)
     const userData = ref({})
     const showMobileMenu = ref(false)
+    
     // Estado de assinatura centralizado no composable
     const { userSubscription, isPro, isEnterprise, isFree, loadSubscription } = useSubscription()
+    
+    // Carrinho
+    const { totalItens: totalItensCarrinho, carregarCarrinho, toggleDrawer: toggleCarrinho, migrarCarrinhoApoLogin } = useCarrinho()
+    
     const showLogoModal = ref(false)
     const siteLogo = ref('')
     const siteName = ref('Moto Express')
@@ -247,11 +270,18 @@ export default {
           // Carregar subscrição do usuário (state centralizado)
           if (token) {
             await loadSubscription()
+            
+            // Carregar carrinho e migrar do localStorage se necessário
+            await migrarCarrinhoApoLogin()
+            await carregarCarrinho()
           }
         } catch (e) {
           console.error('Erro ao fazer parse do usuário:', e)
           username.value = ''
         }
+      } else if (!token) {
+        // Usuário não logado: carregar carrinho do localStorage
+        await carregarCarrinho()
       }
       return isAuthenticated.value
     }
@@ -376,10 +406,12 @@ export default {
       siteName,
       isAdmin,
       openLogoModal,
-      handleLogoUpdate
-      , showMobileMenu,
+      handleLogoUpdate,
+      showMobileMenu,
       toggleMobileMenu,
-      closeMobileMenu
+      closeMobileMenu,
+      totalItensCarrinho,
+      toggleCarrinho
     }
   }
 }
@@ -389,7 +421,7 @@ export default {
 * {
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
+  box-sizing: content-box;
 }
 
 body {
@@ -845,6 +877,64 @@ body {
   height: 1px;
   background: rgba(255, 255, 255, 0.2);
   margin: 0.25rem 0;
+}
+
+/* Botão do Carrinho */
+.btn-carrinho {
+  position: relative;
+  background: rgba(255, 255, 255, 0.15);
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  margin-right: 0.5rem;
+}
+
+.btn-carrinho:hover {
+  background: rgba(255, 255, 255, 0.25);
+  border-color: rgba(255, 255, 255, 0.5);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.btn-carrinho svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 2.5;
+}
+
+.carrinho-badge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  background: linear-gradient(135deg, #ff6b6b 0%, #ee5a6f 100%);
+  color: white;
+  border-radius: 50%;
+  min-width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 0 4px;
+  box-shadow: 0 2px 8px rgba(238, 90, 111, 0.4);
+  border: 2px solid white;
+  animation: pulse-badge 2s ease-in-out infinite;
+}
+
+@keyframes pulse-badge {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 .nav-actions {

@@ -1,25 +1,28 @@
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.authentication import TokenAuthentication
-from .models import Manutencao, Agendamento, Lembrete, PontosFidelidade, Peca, ItemAgendamento
+from .models import Manutencao, Agendamento, Lembrete, PontosFidelidade, Peca, ItemAgendamento, FotoPeca, ItemCarrinho
 from .serializers import (
     ManutencaoSerializer, AgendamentoSerializer, LembreteSerializer, 
     PontosFidelidadeSerializer, PecaSerializer, ItemAgendamentoSerializer,
-    AgendamentoComItensSerializer
+    AgendamentoComItensSerializer, FotoPecaSerializer, ItemCarrinhoSerializer,
+    CarrinhoResumoSerializer
 )
 from clientes.group_permissions import HasGroupPermission, IsAdminGroup
+from django.db.models import Sum, F
+from django.db import transaction
 
 class PecaViewSet(viewsets.ModelViewSet):
     """Gerenciamento de inventário de peças"""
-    queryset = Peca.objects.all()
+    queryset = Peca.objects.prefetch_related('fotos').all()
     serializer_class = PecaSerializer
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated, HasGroupPermission]
     
     def get_queryset(self):
-        queryset = Peca.objects.all()
+        queryset = Peca.objects.prefetch_related('fotos')
         categoria = self.request.query_params.get('categoria')
         if categoria:
             queryset = queryset.filter(categoria=categoria)
@@ -27,6 +30,63 @@ class PecaViewSet(viewsets.ModelViewSet):
         if ativa:
             queryset = queryset.filter(ativa=ativa.lower() == 'true')
         return queryset.order_by('categoria', 'nome')
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    def adicionar_foto(self, request, pk=None):
+        """Adiciona uma foto à peça (máximo 2 fotos)"""
+        peca = self.get_object()
+        
+        # Verificar limite de fotos
+        fotos_count = FotoPeca.objects.filter(peca=peca).count()
+        if fotos_count >= 2:
+            return Response(
+                {'error': 'Máximo de 2 fotos por peça'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        if 'imagem' not in request.FILES:
+            return Response(
+                {'error': 'Nenhuma imagem foi enviada'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        try:
+            foto = FotoPeca.objects.create(
+                peca=peca,
+                imagem=request.FILES['imagem']
+            )
+            serializer = FotoPecaSerializer(foto)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    @action(detail=True, methods=['delete'], permission_classes=[IsAuthenticated])
+    def remover_foto(self, request, pk=None):
+        """Remove uma foto da peça"""
+        try:
+            foto_id = request.query_params.get('foto_id')
+            if not foto_id:
+                return Response(
+                    {'error': 'foto_id é obrigatório'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            
+            foto = FotoPeca.objects.get(id=foto_id, peca_id=pk)
+            foto.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        except FotoPeca.DoesNotExist:
+            return Response(
+                {'error': 'Foto não encontrada'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {'error': str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class ItemAgendamentoViewSet(viewsets.ModelViewSet):
     """Gerenciamento de itens (peças) por agendamento"""
@@ -156,3 +216,181 @@ class PontosFidelidadeViewSet(viewsets.ModelViewSet):
             })
         except ValueError:
             return Response({'error': 'Valor inválido'}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class CarrinhoViewSet(viewsets.ModelViewSet):
+    """Gerenciamento do carrinho de compras"""
+    serializer_class = ItemCarrinhoSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [AllowAny]  # Permite acesso anônimo
+
+    def get_queryset(self):
+        """Retorna itens do carrinho do usuário logado ou sessão anônima"""
+        if self.request.user.is_authenticated:
+            return ItemCarrinho.objects.filter(usuario=self.request.user).select_related('peca').prefetch_related('peca__fotos')
+        else:
+            # Para usuários anônimos, usa session
+            session_key = self.request.session.session_key
+            if not session_key:
+                return ItemCarrinho.objects.none()
+            return ItemCarrinho.objects.filter(sessao_id=session_key).select_related('peca').prefetch_related('peca__fotos')
+
+    @action(detail=False, methods=['get'])
+    def resumo(self, request):
+        """Retorna resumo do carrinho com total"""
+        itens = self.get_queryset()
+        total_preco = sum(item.subtotal for item in itens)
+        total_itens = sum(item.quantidade for item in itens)
+        
+        serializer = CarrinhoResumoSerializer({
+            'itens': itens,
+            'total_itens': total_itens,
+            'total_preco': total_preco
+        })
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def adicionar(self, request):
+        """Adiciona ou atualiza item no carrinho"""
+        peca_id = request.data.get('peca_id')
+        quantidade = int(request.data.get('quantidade', 1))
+
+        if not peca_id:
+            return Response({'error': 'peca_id é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            peca = Peca.objects.get(id=peca_id, ativa=True)
+        except Peca.DoesNotExist:
+            return Response({'error': 'Peça não encontrada'}, status=status.HTTP_404_NOT_FOUND)
+
+        # Validar estoque
+        if quantidade > peca.quantidade:
+            return Response(
+                {'error': f'Estoque insuficiente. Disponível: {peca.quantidade}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Buscar ou criar item no carrinho
+        if request.user.is_authenticated:
+            item, created = ItemCarrinho.objects.get_or_create(
+                usuario=request.user,
+                peca=peca,
+                defaults={'quantidade': quantidade, 'preco_unitario': peca.preco_unitario}
+            )
+        else:
+            session_key = request.session.session_key
+            if not session_key:
+                request.session.create()
+                session_key = request.session.session_key
+            
+            item, created = ItemCarrinho.objects.get_or_create(
+                sessao_id=session_key,
+                peca=peca,
+                defaults={'quantidade': quantidade, 'preco_unitario': peca.preco_unitario}
+            )
+
+        if not created:
+            # Se já existe, atualiza quantidade
+            nova_quantidade = item.quantidade + quantidade
+            if nova_quantidade > peca.quantidade:
+                return Response(
+                    {'error': f'Estoque insuficiente. Disponível: {peca.quantidade}'},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            item.quantidade = nova_quantidade
+            item.save()
+
+        serializer = ItemCarrinhoSerializer(item, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
+
+    @action(detail=True, methods=['patch'])
+    def atualizar_quantidade(self, request, pk=None):
+        """Atualiza quantidade de um item"""
+        item = self.get_object()
+        quantidade = int(request.data.get('quantidade', 1))
+
+        if quantidade <= 0:
+            item.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+
+        if quantidade > item.peca.quantidade:
+            return Response(
+                {'error': f'Estoque insuficiente. Disponível: {item.peca.quantidade}'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        item.quantidade = quantidade
+        item.save()
+
+        serializer = ItemCarrinhoSerializer(item, context={'request': request})
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def migrar_carrinho(self, request):
+        """Migra carrinho do localStorage/sessão para o usuário logado"""
+        if not request.user.is_authenticated:
+            return Response({'error': 'Usuário não autenticado'}, status=status.HTTP_401_UNAUTHORIZED)
+
+        itens_localstorage = request.data.get('itens', [])
+        
+        with transaction.atomic():
+            for item_data in itens_localstorage:
+                peca_id = item_data.get('peca_id')
+                quantidade = item_data.get('quantidade', 1)
+
+                try:
+                    peca = Peca.objects.get(id=peca_id, ativa=True)
+                    
+                    # Validar estoque
+                    if quantidade > peca.quantidade:
+                        continue  # Pula itens sem estoque
+
+                    # Buscar ou criar item no carrinho do usuário
+                    item, created = ItemCarrinho.objects.get_or_create(
+                        usuario=request.user,
+                        peca=peca,
+                        defaults={'quantidade': quantidade, 'preco_unitario': peca.preco_unitario}
+                    )
+
+                    if not created:
+                        # Se já existe, soma as quantidades
+                        nova_quantidade = item.quantidade + quantidade
+                        if nova_quantidade <= peca.quantidade:
+                            item.quantidade = nova_quantidade
+                            item.save()
+
+                except Peca.DoesNotExist:
+                    continue  # Pula peças que não existem mais
+
+        # Retorna o carrinho atualizado
+        return self.resumo(request)
+
+    @action(detail=False, methods=['post'])
+    def validar_estoque(self, request):
+        """Valida se todos os itens do carrinho têm estoque disponível"""
+        itens = self.get_queryset()
+        erros = []
+
+        for item in itens:
+            if item.quantidade > item.peca.quantidade:
+                erros.append({
+                    'item_id': item.id,
+                    'peca': item.peca.nome,
+                    'solicitado': item.quantidade,
+                    'disponivel': item.peca.quantidade
+                })
+
+        if erros:
+            return Response(
+                {'valid': False, 'erros': erros},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        return Response({'valid': True, 'message': 'Todos os itens estão disponíveis'})
+
+    @action(detail=False, methods=['delete'])
+    def limpar(self, request):
+        """Remove todos os itens do carrinho"""
+        self.get_queryset().delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+

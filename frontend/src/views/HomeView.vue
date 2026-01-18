@@ -686,36 +686,113 @@ export default {
     gap: 1rem;
     padding: 0.75rem;
     padding-top: calc(0.75rem + env(safe-area-inset-top, 0px));
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   .hero {
     padding: 1.5rem 1rem;
     border-radius: 8px;
+    text-align: center;
   }
 
   .hero h1 {
-    font-size: 1.3rem;
+    font-size: 1.25rem;
+    font-weight: 700;
   }
 
   .hero p {
     font-size: 0.9rem;
+    margin-top: 0.5rem;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+    gap: 10px;
   }
 
   .stat-card {
-    padding: 1rem 0.75rem;
+    padding: 12px 10px;
+    border-radius: 8px;
   }
 
   .stat-card h3 {
-    font-size: 1.75rem;
+    font-size: 1.8rem;
+    margin-bottom: 4px;
   }
 
   .stat-card p {
     font-size: 0.85rem;
   }
 
+  .quick-actions {
+    gap: 8px;
+  }
+
   .action-btn {
-    padding: 0.875rem;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    border-radius: 6px;
+  }
+
+  .fila-badge {
+    width: 20px;
+    height: 20px;
+    font-size: 0.7rem;
+  }
+
+  .modal-fila {
+    max-height: 90vh;
+    margin: 0 10px;
+    border-radius: 12px;
+  }
+
+  .fila-item {
+    padding: 10px;
+    margin-bottom: 8px;
+  }
+
+  .fila-numero {
+    width: 32px;
+    height: 32px;
+    font-size: 0.9rem;
+  }
+
+  .fila-info h4 {
+    font-size: 0.9rem;
+    margin: 0 0 4px 0;
+  }
+
+  .fila-info p {
+    font-size: 0.8rem;
+    margin: 2px 0;
+  }
+
+  .fila-status {
+    font-size: 0.75rem;
+    padding: 4px 6px;
+  }
+
+  .empty-fila {
+    padding: 20px 10px;
+  }
+
+  .empty-fila p {
     font-size: 0.95rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .hero h1 {
+    font-size: 1.1rem;
+  }
+
+  .stat-card h3 {
+    font-size: 1.6rem;
+  }
+
+  .action-btn {
+    padding: 8px 10px;
+    font-size: 0.85rem;
   }
 }
 </style>

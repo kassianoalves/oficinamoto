@@ -66,15 +66,17 @@
       <div v-for="cliente in clientesFiltrados" :key="cliente.id" class="cliente-card">
         <div class="cliente-info">
           <h4>{{ cliente.nome }}</h4>
-          <p><strong>CPF:</strong> {{ cliente.cpf }}</p>
-          <p><strong>Telefone:</strong> {{ cliente.telefone }}</p>
-          <p><strong>Email:</strong> {{ cliente.email }}</p>
-          <p><strong>Endereço:</strong> {{ cliente.endereco }}, {{ cliente.cidade }}</p>
+          <div class="info-group">
+            <p><strong>CPF:</strong> {{ cliente.cpf }}</p>
+            <p><strong>Telefone:</strong> {{ cliente.telefone }}</p>
+            <p><strong>Email:</strong> {{ cliente.email }}</p>
+            <p><strong>Endereço:</strong> {{ cliente.endereco }}, {{ cliente.cidade }}</p>
+          </div>
         </div>
         <div class="cliente-actions">
-          <button @click="verHistorico(cliente)" class="btn btn-history">📋 Histórico</button>
-          <button @click="editarCliente(cliente)" class="btn btn-edit">✏️ Editar</button>
-          <button @click="deletarCliente(cliente.id)" class="btn btn-delete">🗑️ Deletar</button>
+          <button @click="verHistorico(cliente)" class="btn btn-history" title="Ver histórico">📋Histórico</button>
+          <button @click="editarCliente(cliente)" class="btn btn-edit" title="Editar">✏️Editar</button>
+          <button @click="deletarCliente(cliente.id)" class="btn btn-delete" title="Deletar">🗑️Deletar</button>
         </div>
       </div>
     </div>
@@ -480,6 +482,7 @@ export default {
 .form-container h3 {
   margin-bottom: 1.5rem;
   color: #333;
+  font-size: 1.3rem;
 }
 
 .moto-extra {
@@ -493,19 +496,22 @@ export default {
 .moto-extra-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
   margin-bottom: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .moto-extra-header h4 {
   margin: 0;
   color: #4b5563;
+  font-size: 1.1rem;
 }
 
 .hint {
   color: #6b7280;
   font-size: 0.9rem;
+  line-height: 1.3;
 }
 
 .form-grid {
@@ -535,7 +541,7 @@ export default {
 }
 
 .btn {
-  padding: 0.8rem 1.5rem;
+  padding: 0.5rem 0.5rem;
   border: none;
   border-radius: 6px;
   cursor: pointer;
@@ -614,6 +620,20 @@ export default {
   background: #f5576c;
   color: white;
   flex: 1;
+}
+
+.btn-history:hover,
+.btn-edit:hover,
+.btn-delete:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.info-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
 }
 
 .btn-history:hover,
@@ -767,9 +787,13 @@ export default {
 
 .empty-state {
   text-align: center;
-  padding: 3rem;
+  padding: 3rem 1rem;
   color: #999;
   font-size: 1.1rem;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  margin: 0 12px;
 }
 
 .pecas-list {
@@ -824,12 +848,341 @@ export default {
 }
 
 @media (max-width: 768px) {
+  .clientes-view {
+    gap: 1.5rem;
+    padding: 0.5rem;
+  }
+
+  .view-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.8rem;
+    padding: 0 8px;
+  }
+
+  .view-header h2 {
+    font-size: 1.5rem;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+
+  .search-input {
+    min-width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .btn-add {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    font-size: 0.95rem;
+  }
+
   .clientes-list {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+    padding: 0 8px;
+  }
+
+  .cliente-card {
+    padding: 1.2rem;
+  }
+
+  .cliente-info h4 {
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .cliente-info p {
+    font-size: 0.85rem;
+    margin: 0.4rem 0;
+  }
+
+  .cliente-actions {
+    margin-top: 0.8rem;
+    gap: 0.4rem;
+  }
+
+  .btn-history,
+  .btn-edit,
+  .btn-delete {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.85rem;
   }
 
   .form-grid {
     grid-template-columns: 1fr;
+    gap: 0.8rem;
+  }
+
+  .form-grid input {
+    padding: 0.8rem;
+    font-size: 0.95rem;
+  }
+
+  .moto-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-container {
+    padding: 1.2rem 8px;
+  }
+
+  .form-container h3 {
+    font-size: 1.2rem;
+  }
+
+  .form-actions {
+    gap: 0.8rem;
+    flex-direction: row;
+  }
+
+  .form-actions button {
+    flex: 1;
+    padding: 0.7rem;
+  }
+}
+
+/* Mobile pequeno - 480px e abaixo */
+@media (max-width: 480px) {
+  .clientes-view {
+    gap: 1rem;
+    padding: 0;
+  }
+
+  .view-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.6rem;
+    padding: 0 8px;
+    margin-bottom: 0.5rem;
+  }
+
+  .view-header h2 {
+    font-size: 1.3rem;
+  }
+
+  .header-actions {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .search-input {
+    min-width: 100%;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+  }
+
+  .btn-add {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+  }
+
+  .clientes-list {
+    grid-template-columns: 1fr;
+    gap: 0.8rem;
+    padding: 0 8px;
+  }
+
+  .cliente-card {
+    padding: 1rem;
+    border-radius: 10px;
+  }
+
+  .cliente-info h4 {
+    font-size: 1rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .cliente-info p {
+    font-size: 0.8rem;
+    margin: 0.3rem 0;
+    line-height: 1.3;
+  }
+
+  .cliente-actions {
+    margin-top: 0.6rem;
+    gap: 0.3rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+
+  .btn-history,
+  .btn-edit,
+  .btn-delete {
+    padding: 0.5rem 0.6rem;
+    font-size: 0.75rem;
+    white-space: nowrap;
+    min-width: auto;
+  }
+
+  .form-container {
+    padding: 1rem 8px;
+    border-radius: 8px;
+  }
+
+  .form-container h3 {
+    font-size: 1.1rem;
+    margin-bottom: 0.8rem;
+  }
+
+  .form-grid {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+
+  .form-grid input {
+    padding: 0.6rem;
+    font-size: 0.9rem;
+    border-radius: 6px;
+  }
+
+  .moto-extra {
+    margin-top: 0.8rem;
+    padding: 0.8rem;
+  }
+
+  .moto-extra-header {
+    margin-bottom: 0.6rem;
+  }
+
+  .moto-extra-header h4 {
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+  }
+
+  .hint {
+    font-size: 0.75rem;
+  }
+
+  .moto-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .form-actions {
+    gap: 0.6rem;
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+    padding: 0.6rem;
+    font-size: 0.9rem;
+  }
+
+  /* Modal responsivo */
+  .modal-overlay {
+    padding: 0.5rem;
+  }
+
+  .modal-historico {
+    max-height: calc(100vh - 1rem);
+    border-radius: 12px 12px 0 0;
+  }
+
+  .modal-header {
+    padding: 1rem;
+  }
+
+  .modal-header h3 {
+    font-size: 1.1rem;
+  }
+
+  .close-btn {
+    font-size: 1.2rem;
+  }
+
+  .modal-body {
+    padding: 0.8rem;
+    overflow-y: auto;
+  }
+
+  .historico-section {
+    margin-bottom: 0.8rem;
+  }
+
+  .historico-section h4 {
+    font-size: 0.95rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .motos-list,
+  .manutencoes-list,
+  .pecas-list {
+    gap: 0.6rem;
+  }
+
+  .moto-item,
+  .manutencao-item,
+  .peca-item {
+    padding: 0.8rem;
+  }
+
+  .moto-item p,
+  .manutencao-item p,
+  .peca-item p {
+    font-size: 0.8rem;
+  }
+
+  .peca-details {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+  }
+}
+
+/* Tablet intermediário - 1024px */
+@media (max-width: 1024px) {
+  .clientes-list {
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  }
+
+  .view-header {
+    padding: 0 10px;
+  }
+
+  .search-input {
+    min-width: calc(100% - 20px);
+  }
+
+  .cliente-actions {
+    display: flex;
+    gap: 0.4rem;
+  }
+
+  .btn-history,
+  .btn-edit,
+  .btn-delete {
+    padding: 0.6rem 0.8rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* Tela grande - 1440px+ */
+@media (min-width: 1440px) {
+  .clientes-list {
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+  }
+
+  .view-header {
+    gap: 1.5rem;
+  }
+
+  .search-input {
+    min-width: 400px;
+  }
+
+  .cliente-card {
+    padding: 1.8rem;
+  }
+
+  .cliente-info h4 {
+    font-size: 1.3rem;
   }
 }
 </style>
