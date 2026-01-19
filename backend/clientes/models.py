@@ -174,8 +174,13 @@ class Fornecedor(models.Model):
     telefone = models.CharField(max_length=20)
     cnpj = models.CharField(max_length=18, blank=True)
     endereco = models.TextField()
+    cep = models.CharField(max_length=9, blank=True)
+    bairro = models.CharField(max_length=100, blank=True)
+    estado = models.CharField(max_length=2, blank=True)
     cidade = models.CharField(max_length=100)
     especialidade = models.CharField(max_length=255)
+    representante_nome = models.CharField(max_length=255, blank=True)
+    representante_telefone = models.CharField(max_length=20, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
 
     class Meta:

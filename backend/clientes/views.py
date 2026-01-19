@@ -3,8 +3,32 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.authentication import TokenAuthentication
-from .models import Cliente, ProdutoLoja
-from .serializers import ClienteSerializer, ProdutoLojaSerializer
+from .models import Cliente, ProdutoLoja, Fornecedor
+from .serializers import ClienteSerializer, ProdutoLojaSerializer, FornecedorSerializer
+
+# FornecedorViewSet: cada usuário só vê e manipula seus próprios fornecedores
+class FornecedorViewSet(viewsets.ModelViewSet):
+    serializer_class = FornecedorSerializer
+    authentication_classes = [TokenAuthentication]
+    permission_classes = [IsAuthenticated]
+
+    def get_queryset(self):
+        return Fornecedor.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        if serializer.instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Você não pode editar um fornecedor que não é seu')
+        serializer.save()
+
+    def perform_destroy(self, instance):
+        if instance.user != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('Você não pode deletar um fornecedor que não é seu')
+        instance.delete()
 from .group_permissions import HasGroupPermission, IsAdminGroup
 
 class ClienteViewSet(viewsets.ModelViewSet):

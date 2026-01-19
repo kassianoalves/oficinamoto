@@ -99,6 +99,7 @@
 </template>
 
 <script>
+
 import { useCarrinho } from '@/composables/useCarrinho';
 
 export default {
@@ -118,6 +119,9 @@ export default {
       validarEstoque
     } = useCarrinho();
 
+    // Log para depuração: exibe os itens do carrinho sempre que o componente renderiza
+    console.log('[CARRINHO][DRAWER] itensCarrinho:', itensCarrinho.value);
+
     const aumentarQuantidade = async (item) => {
       await atualizarQuantidade(item.id, item.quantidade + 1);
     };
@@ -135,33 +139,24 @@ export default {
     };
 
     const remover = async (item) => {
-      if (confirm(`Remover ${item.peca_nome} do carrinho?`)) {
-        await removerItem(item.id);
-      }
+      // TODO: Adicionar feedback visual se necessário
+      await removerItem(item.id);
     };
 
     const limpar = async () => {
-      if (confirm('Limpar todo o carrinho?')) {
-        const resultado = await limparCarrinho();
-        if (resultado.sucesso) {
-          alert('Carrinho limpo!');
-        }
-      }
+      // TODO: Adicionar feedback visual (snackbar/toast) se necessário
+      const resultado = await limparCarrinho();
+      // if (resultado.sucesso) { ... }
     };
 
     const finalizar = async () => {
       const { valido, erros } = await validarEstoque();
 
       if (!valido) {
-        let mensagem = 'Alguns itens não têm estoque suficiente:\n\n';
-        erros.forEach(erro => {
-          mensagem += `${erro.peca}: Solicitado ${erro.solicitado}, disponível ${erro.disponivel}\n`;
-        });
-        alert(mensagem);
+        // TODO: Adicionar feedback visual de erro de estoque
         return;
       }
 
-      alert('Funcionalidade de checkout em desenvolvimento!');
       // TODO: Implementar checkout/pagamento
     };
 
@@ -415,20 +410,25 @@ export default {
   margin: 0;
 }
 
+
 .btn-remover {
-  background: #ff6b35;
-  color: white;
+  background: transparent;
+  color: #e53935;
   border: none;
   width: 32px;
   height: 32px;
   border-radius: 4px;
   cursor: pointer;
-  font-size: 1em;
-  transition: all 0.3s;
+  font-size: 1.2em;
+  transition: color 0.3s, background 0.3s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-remover:hover:not(:disabled) {
-  background: #e55a24;
+  color: #b71c1c;
+  background: transparent;
 }
 
 .btn-remover:disabled {

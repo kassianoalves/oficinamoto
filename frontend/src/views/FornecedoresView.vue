@@ -27,7 +27,8 @@
           <p><strong>📱 Telefone:</strong> {{ fornecedor.telefone }}</p>
           <p v-if="fornecedor.cnpj"><strong>📄 CNPJ:</strong> {{ fornecedor.cnpj }}</p>
           <p><strong>📍 Cidade:</strong> {{ fornecedor.cidade }}</p>
-          <p><strong>🏷️ Especialidade:</strong> <span class="badge-especialidade">{{ fornecedor.especialidade }}</span></p>
+          <p><strong>🏷️ Especialidade:</strong> <span class="badge-especialidade">{{ fornecedor.especialidade }}</span>
+          </p>
           <p><strong>📅 Cadastrado:</strong> {{ formatarData(fornecedor.data_criacao) }}</p>
         </div>
       </div>
@@ -45,41 +46,81 @@
           <button @click="fecharFormulario" class="btn-close">✕</button>
         </div>
         <form @submit.prevent="salvarFornecedor" class="form">
-          <div class="form-group">
-            <label>Nome *</label>
-            <input v-model="form.nome" type="text" required placeholder="Nome do fornecedor">
-          </div>
-          <div class="form-row">
+          <div class="form-section">
+            <h3 class="form-section-title">Dados da Empresa</h3>
+            <div class="form-group">
+              <label>Nome Social *</label>
+              <input v-model="form.nome" type="text" required placeholder="Fornecedor">
+            </div>
             <div class="form-group">
               <label>Email *</label>
               <input v-model="form.email" type="email" required placeholder="email@exemplo.com">
             </div>
             <div class="form-group">
-              <label>Telefone *</label>
-              <input v-model="form.telefone" type="text" required placeholder="(00) 00000-0000">
+              <label>Especialidade *</label>
+              <input v-model="form.especialidade" type="text" required placeholder="Ex: Peças, Pneus, Serviços">
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>CNPJ</label>
+                <input v-model="form.cnpj" type="cnpj" placeholder="00.000.000/0000-00"
+              </div>
+              <div class="form-group">
+                <label>Telefone *</label>
+                <input v-model="form.telefone" type="tel" placeholder="(00) 00000-0000" required maxlength="15"
+                  @input="formatTelefone">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group" style="flex:2; min-width:120px;">
+                <label>CEP *</label>
+                <input v-model="form.cep" type="CEP" placeholder="CEP" maxlength="9"
+                  @blur="buscarEnderecoPorCep">
+                <div v-if="cepErro" class="cep-erro">{{ cepErro }}</div>
+              </div>
+              <div class="form-group" style="flex:1; min-width:80px;">
+                <label>Estado</label>
+                <input v-model="form.estado" type="text" placeholder="Estado" :disabled="true">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Rua</label>
+                <input v-model="form.rua" type="text" placeholder="Rua" :disabled="true">
+              </div>
+              <div class="form-group">
+                <label>Número *</label>
+                <input v-model="form.numero" type="text" placeholder="Número" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Bairro</label>
+                <input v-model="form.bairro" type="text" placeholder="Bairro" :disabled="true">
+              </div>
+              <div class="form-group">
+                <label>Cidade</label>
+                <input v-model="form.cidade" type="text" placeholder="Cidade" :disabled="true">
+              </div>
             </div>
           </div>
-          <div class="form-row">
-            <div class="form-group">
-              <label>CNPJ</label>
-              <input v-model="form.cnpj" type="text" placeholder="00.000.000/0000-00">
+          <div class="form-section">
+            <h3 class="form-section-title">Dados do Representante</h3>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Nome</label>
+                <input v-model="form.representante_nome" type="text" placeholder="Representante">
+              </div>
+              <div class="form-group">
+                <label>Telefone</label>
+                <input v-model="form.representante_telefone" type="tel" placeholder="(00) 00000-0000" maxlength="15"
+                  @input="formatTelefoneRepresentante">
+              </div>
             </div>
-            <div class="form-group">
-              <label>Cidade *</label>
-              <input v-model="form.cidade" type="text" required placeholder="Nome da cidade">
+            <div class="form-actions">
+              <button type="submit" class="btn-save">Salvar</button>
+              <button type="button" class="btn-cancel" @click="fecharFormulario">Cancelar</button>
             </div>
-          </div>
-          <div class="form-group">
-            <label>Especialidade *</label>
-            <input v-model="form.especialidade" type="text" required placeholder="Ex: Óleo, Pneus, Peças">
-          </div>
-          <div class="form-group">
-            <label>Endereço *</label>
-            <textarea v-model="form.endereco" required placeholder="Endereço completo" rows="3"></textarea>
-          </div>
-          <div class="form-actions">
-            <button type="button" @click="fecharFormulario" class="btn-cancel">Cancelar</button>
-            <button type="submit" class="btn-save">{{ fornecedorEditando ? 'Atualizar' : 'Salvar' }}</button>
           </div>
         </form>
       </div>
@@ -121,30 +162,54 @@ export default {
 
     const salvarFornecedor = async () => {
       try {
+        // Monta o endereço completo
+        const enderecoCompleto = (form.value.rua || '') + (form.value.numero ? ', ' + form.value.numero : '')
+        const payload = {
+          ...form.value,
+          endereco: enderecoCompleto,
+        }
         if (fornecedorEditando.value) {
-          await api.put(`/subscription/fornecedores/${fornecedorEditando.value.id}/`, form.value)
+          await api.put(`/subscription/fornecedores/${fornecedorEditando.value.id}/`, payload)
           success('Fornecedor atualizado com sucesso!')
         } else {
-          await api.post('/subscription/fornecedores/', form.value)
+          await api.post('/subscription/fornecedores/', payload)
           success('Fornecedor cadastrado com sucesso!')
         }
         fecharFormulario()
         carregarFornecedores()
       } catch (err) {
+        // Tenta mostrar erro detalhado do backend
+        if (err.response && err.response.data) {
+          error('Erro: ' + JSON.stringify(err.response.data))
+        } else {
+          error('Erro ao salvar fornecedor')
+        }
         console.error('Erro ao salvar fornecedor:', err)
-        error('Erro ao salvar fornecedor')
       }
     }
 
     const editarFornecedor = (fornecedor) => {
       fornecedorEditando.value = fornecedor
-      form.value = { ...fornecedor }
+      // Separar rua e número do campo endereco
+      let rua = '', numero = ''
+      if (fornecedor.endereco) {
+        const partes = fornecedor.endereco.split(',')
+        rua = partes[0] ? partes[0].trim() : ''
+        numero = partes[1] ? partes[1].trim() : ''
+      }
+      form.value = {
+        ...fornecedor,
+        rua,
+        numero,
+        representante_nome: fornecedor.representante_nome || '',
+        representante_telefone: fornecedor.representante_telefone || ''
+      }
       mostrarFormulario.value = true
     }
 
     const deletarFornecedor = async (id) => {
       if (!confirm('Tem certeza que deseja deletar este fornecedor?')) return
-      
+
       try {
         await api.delete(`/subscription/fornecedores/${id}/`)
         success('Fornecedor deletado com sucesso!')
@@ -173,6 +238,61 @@ export default {
       return new Date(data).toLocaleDateString('pt-BR')
     }
 
+    const formatTelefone = (event) => {
+      let value = event.target.value.replace(/\D/g, '')
+      if (value.length > 11) value = value.slice(0, 11)
+      if (value.length > 10) {
+        value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+      } else if (value.length > 6) {
+        value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
+      } else if (value.length > 2) {
+        value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2')
+      }
+      form.value.telefone = value
+    }
+
+    const formatTelefoneRepresentante = (event) => {
+      let value = event.target.value.replace(/\D/g, '')
+      if (value.length > 11) value = value.slice(0, 11)
+      if (value.length > 10) {
+        value = value.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3')
+      } else if (value.length > 6) {
+        value = value.replace(/(\d{2})(\d{4})(\d{0,4})/, '($1) $2-$3')
+      } else if (value.length > 2) {
+        value = value.replace(/(\d{2})(\d{0,5})/, '($1) $2')
+      }
+      form.value.representante_telefone = value
+    }
+
+    const cepErro = ref('')
+    const buscarEnderecoPorCep = async () => {
+      cepErro.value = ''
+      const cep = form.value.cep.replace(/\D/g, '')
+      if (cep.length !== 8) return
+      try {
+        const res = await fetch(`https://viacep.com.br/ws/${cep}/json/`)
+        const data = await res.json()
+        if (!data.erro) {
+          form.value.rua = data.logradouro || ''
+          form.value.bairro = data.bairro || ''
+          form.value.cidade = data.localidade || ''
+          form.value.estado = data.uf || ''
+        } else {
+          form.value.rua = ''
+          form.value.bairro = ''
+          form.value.cidade = ''
+          form.value.estado = ''
+          cepErro.value = 'CEP não encontrado. Verifique e tente novamente.'
+        }
+      } catch (e) {
+        form.value.rua = ''
+        form.value.bairro = ''
+        form.value.cidade = ''
+        form.value.estado = ''
+        cepErro.value = 'Erro ao buscar o CEP. Tente novamente.'
+      }
+    }
+
     onMounted(() => {
       carregarFornecedores()
     })
@@ -186,7 +306,11 @@ export default {
       editarFornecedor,
       deletarFornecedor,
       fecharFormulario,
-      formatarData
+      formatarData,
+      formatTelefone,
+      formatTelefoneRepresentante,
+      buscarEnderecoPorCep,
+      cepErro
     }
   }
 }
@@ -248,15 +372,15 @@ export default {
 
 .fornecedores-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 0.2rem;
 }
 
 .fornecedor-card {
-  background: white;
-  border: 1px solid #e0e0e0;
+  background: rgb(250, 250, 250);
+  border: 2px solid #0088f7;
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 0.5rem;
   transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -284,7 +408,8 @@ export default {
   gap: 0.5rem;
 }
 
-.btn-edit, .btn-delete {
+.btn-edit,
+.btn-delete {
   background: none;
   border: none;
   font-size: 1.2rem;
@@ -293,7 +418,8 @@ export default {
   transition: transform 0.2s;
 }
 
-.btn-edit:hover, .btn-delete:hover {
+.btn-edit:hover,
+.btn-delete:hover {
   transform: scale(1.2);
 }
 
@@ -333,270 +459,185 @@ export default {
 }
 
 .modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 600px;
-  width: 90%;
-  max-height: 90vh;
-  overflow-y: auto;
+  background: #fff;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(80, 120, 180, 0.18);
+  padding: 2.2rem 2.2rem 1.5rem 2.2rem;
+  max-width: 480px;
+  width: 96vw;
+  margin: 2.5rem auto;
+  position: relative;
+  animation: modalFadeIn 0.25s;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .modal-header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.5rem;
+  justify-content: space-between;
+  margin-bottom: 0.2rem;
 }
 
 .modal-header h2 {
-  color: #333;
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #2a4365;
+  display: flex;
+  align-items: center;
+  gap: 0.05rem;
+}
+
+.modal-header h2::before {
+  content: '🏭';
   font-size: 1.5rem;
+  margin-right: 0.3rem;
 }
 
 .btn-close {
   background: none;
   border: none;
   font-size: 1.5rem;
+  color: #888;
   cursor: pointer;
-  color: #999;
+  transition: color 0.18s;
+}
+.btn-close:hover {
+  color: #f5576c;
 }
 
 .form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.2rem;
 }
 
 .form-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  display: flex;
+  gap: 1.2rem;
 }
 
 .form-group {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.0rem;
 }
 
 .form-group label {
+  font-size: 0.97rem;
+  color: #4facfe;
   font-weight: 600;
-  color: #333;
-  font-size: 0.9rem;
 }
 
 .form-group input,
 .form-group textarea {
-  padding: 0.8rem;
-  border: 1px solid #ddd;
-  border-radius: 6px;
+  border: 1.5px solid #d1d5db;
+  border-radius: 8px;
+  padding: 0.6rem 1rem;
   font-size: 1rem;
-  transition: border-color 0.3s;
+  transition: border 0.18s;
+  background: #f9fbfd;
 }
-
 .form-group input:focus,
 .form-group textarea:focus {
+  border-color: #4facfe;
   outline: none;
-  border-color: #667eea;
+}
+
+.form-section {
+  margin-bottom: 0rem;
+  padding-bottom: 0.01rem;
+  border-bottom: 1.5px solid #e3e8ee;
+}
+.form-section:last-child {
+  border-bottom: none;
+  margin-bottom: 0.5rem;
+}
+.form-section-title {
+  font-size: 1.08rem;
+  color: #4facfe;
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+  margin-top: 0.2rem;
+  letter-spacing: 0.01em;
 }
 
 .form-actions {
   display: flex;
-  justify-content: flex-end;
   gap: 1rem;
-  margin-top: 1rem;
-}
-
-.btn-cancel {
-  background: #f0f0f0;
-  color: #333;
-  border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-weight: 600;
+  margin-top: 0.5rem;
 }
 
 .btn-save {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  color: white;
+  background: linear-gradient(90deg, #4facfe 60%, #00f2fe 100%);
+  color: #fff;
   border: none;
-  padding: 0.8rem 1.5rem;
-  border-radius: 6px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.7rem 1.5rem;
   cursor: pointer;
-  font-weight: 600;
+  box-shadow: 0 2px 8px rgba(79, 172, 254, 0.10);
+  transition: background 0.18s, box-shadow 0.18s;
 }
-
-.btn-cancel:hover {
-  background: #e0e0e0;
-}
-
 .btn-save:hover {
-  transform: translateY(-2px);
+  background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+  box-shadow: 0 4px 16px rgba(79, 172, 254, 0.13);
 }
 
-@media (max-width: 768px) {
-  .header h1 {
-    font-size: 1.8rem;
-  }
-  
-  .subtitle {
-    font-size: 0.95rem;
-  }
-  
-  .badge-pro {
-    font-size: 0.8rem;
-    padding: 0.3rem 0.8rem;
-  }
-  
-  .actions {
-    justify-content: center;
-    margin-bottom: 1.5rem;
-  }
-  
-  .btn-add {
-    width: 100%;
-    padding: 0.9rem 1rem;
-    font-size: 0.95rem;
-  }
-  
-  .fornecedores-grid {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .fornecedor-card {
-    padding: 1rem;
-  }
-  
-  .card-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 0.75rem;
-  }
-  
-  .card-header h3 {
-    font-size: 1.1rem;
-    word-break: break-word;
-  }
-  
-  .card-actions {
-    align-self: flex-end;
-  }
-  
-  .card-body p {
-    font-size: 0.9rem;
-    word-break: break-word;
-  }
-  
+.btn-cancel {
+  background: #f5576c;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.7rem 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(245, 87, 108, 0.10);
+  transition: background 0.18s, box-shadow 0.18s;
+}
+.btn-cancel:hover {
+  background: #d90429;
+  box-shadow: 0 4px 16px rgba(245, 87, 108, 0.13);
+}
+
+.form-section:last-child .form-row {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: nowrap;
+}
+.form-section:last-child .form-row .form-group {
+  flex: 1 1 0;
+  min-width: 120px;
+  max-width: 100%;
+}
+@media (max-width: 600px) {
   .modal-content {
-    width: 95%;
-    padding: 1.5rem;
-    margin: 1rem;
+    padding: 1.1rem 0.5rem 1rem 0.5rem;
+    max-width: 99vw;
   }
-  
-  .modal-header h2 {
-    font-size: 1.25rem;
-  }
-  
   .form-row {
-    grid-template-columns: 1fr;
-  }
-  
-  .form-group input,
-  .form-group textarea {
-    font-size: 0.95rem;
-  }
-  
-  .form-actions {
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.7rem;
   }
-  
-  .btn-cancel,
-  .btn-save {
-    width: 100%;
-    padding: 0.9rem;
+  .form-section:last-child .form-row {
+    flex-direction: column;
+    gap: 0.5rem;
   }
-}
-
-/* iPhone 14 e dispositivos similares (390px) */
-@media (max-width: 430px) {
-  .fornecedores-view {
-    padding: 0.75rem;
-  }
-  
-  .header {
-    margin-bottom: 1.5rem;
-  }
-  
-  .header h1 {
-    font-size: 1.5rem;
-    line-height: 1.3;
-  }
-  
-  .subtitle {
-    font-size: 0.85rem;
-  }
-  
-  .fornecedor-card {
-    padding: 0.875rem;
-  }
-  
-  .card-header h3 {
-    font-size: 1rem;
-  }
-  
-  .card-body p {
-    font-size: 0.85rem;
-    margin: 0.5rem 0;
-  }
-  
-  .card-body p strong {
-    display: block;
-    margin-bottom: 0.15rem;
-  }
-  
-  .badge-especialidade {
-    font-size: 0.75rem;
-    padding: 0.15rem 0.5rem;
-    display: inline-block;
-    margin-top: 0.25rem;
-  }
-  
-  .btn-edit,
-  .btn-delete {
-    font-size: 1.1rem;
-    padding: 0.4rem;
-  }
-  
-  .modal-content {
-    padding: 1rem;
-    width: 98%;
-    max-height: 95vh;
-  }
-  
-  .modal-header {
-    margin-bottom: 1rem;
-  }
-  
-  .modal-header h2 {
-    font-size: 1.1rem;
-  }
-  
-  .btn-close {
-    font-size: 1.3rem;
-  }
-  
-  .form-group label {
-    font-size: 0.85rem;
-  }
-  
-  .form-group input,
-  .form-group textarea {
-    padding: 0.7rem;
-    font-size: 0.9rem;
+  .form-section:last-child .form-group {
+    max-width: 100%;
   }
 }
 </style>
+
+.cep-erro {
+  color: #d32f2f;
+  font-size: 0.95em;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}

@@ -1,5 +1,6 @@
 import { ref, computed } from 'vue';
 import api from '@/api.js';
+import { authStorage } from '@/utils/authStorage.js';
 
 // Estado global do carrinho
 const itensCarrinho = ref([]);
@@ -19,9 +20,9 @@ export function useCarrinho() {
 
   const temItens = computed(() => itensCarrinho.value.length > 0);
 
-  // Verifica se usuário está logado
+  // Verifica se usuário está logado (usa authStorage, que pode ser sessionStorage ou localStorage)
   const usuarioLogado = computed(() => {
-    return !!localStorage.getItem('token');
+    return !!authStorage.getToken();
   });
 
   /**
@@ -29,12 +30,23 @@ export function useCarrinho() {
    */
   const carregarCarrinho = async () => {
     carregandoCarrinho.value = true;
-    
     try {
       if (usuarioLogado.value) {
         // Usuário logado: busca do backend
         const response = await api.get('/carrinho/');
-        itensCarrinho.value = response.data;
+        console.log('[CARRINHO][DEBUG] Resposta bruta da API /carrinho/:', response.data);
+        // Garante que sempre será array
+        if (Array.isArray(response.data.results)) {
+          itensCarrinho.value = response.data.results;
+        } else if (Array.isArray(response.data)) {
+          itensCarrinho.value = response.data;
+        } else if (response.data && Array.isArray(response.data.itens)) {
+          itensCarrinho.value = response.data.itens;
+        } else if (response.data && typeof response.data === 'object' && Object.keys(response.data).length > 0) {
+          itensCarrinho.value = [response.data];
+        } else {
+          itensCarrinho.value = [];
+        }
       } else {
         // Usuário anônimo: busca do localStorage
         const carrinhoLocal = localStorage.getItem('carrinho');
@@ -42,9 +54,14 @@ export function useCarrinho() {
       }
     } catch (error) {
       console.error('Erro ao carregar carrinho:', error);
-      // Fallback para localStorage
-      const carrinhoLocal = localStorage.getItem('carrinho');
-      itensCarrinho.value = carrinhoLocal ? JSON.parse(carrinhoLocal) : [];
+      if (usuarioLogado.value) {
+        // Usuário logado: nunca usa localStorage, apenas limpa carrinho local
+        itensCarrinho.value = [];
+      } else {
+        // Usuário anônimo: tenta recuperar do localStorage
+        const carrinhoLocal = localStorage.getItem('carrinho');
+        itensCarrinho.value = carrinhoLocal ? JSON.parse(carrinhoLocal) : [];
+      }
     } finally {
       carregandoCarrinho.value = false;
     }
@@ -66,27 +83,23 @@ export function useCarrinho() {
     try {
       if (usuarioLogado.value) {
         // Usuário logado: usa API
-        const response = await api.post('/carrinho/adicionar/', {
+        const resp = await api.post('/carrinho/adicionar/', {
           peca_id: produto.id,
           quantidade: quantidade
         });
-
+        console.log('[CARRINHO][FRONT] Resposta adicionar:', resp.data);
         // Atualiza lista
         await carregarCarrinho();
-        
         return { sucesso: true, mensagem: 'Produto adicionado ao carrinho!' };
       } else {
         // Usuário anônimo: usa localStorage
         const itemExistente = itensCarrinho.value.find(item => item.peca === produto.id);
-
         if (itemExistente) {
           // Atualiza quantidade
           const novaQuantidade = itemExistente.quantidade + quantidade;
-          
           if (novaQuantidade > produto.estoque) {
             return { sucesso: false, mensagem: `Estoque insuficiente. Disponível: ${produto.estoque}` };
           }
-
           itemExistente.quantidade = novaQuantidade;
           itemExistente.subtotal = itemExistente.quantidade * parseFloat(itemExistente.preco_unitario);
         } else {
@@ -94,7 +107,6 @@ export function useCarrinho() {
           if (quantidade > produto.estoque) {
             return { sucesso: false, mensagem: `Estoque insuficiente. Disponível: ${produto.estoque}` };
           }
-
           const novoItem = {
             id: Date.now(), // ID temporário para localStorage
             peca: produto.id,
@@ -106,15 +118,16 @@ export function useCarrinho() {
             subtotal: quantidade * parseFloat(produto.preco),
             estoque_disponivel: produto.estoque
           };
-
           itensCarrinho.value.push(novoItem);
         }
-
         salvarLocalStorage();
         return { sucesso: true, mensagem: 'Produto adicionado ao carrinho!' };
       }
     } catch (error) {
       console.error('Erro ao adicionar ao carrinho:', error);
+      if (error.response) {
+        console.error('[CARRINHO][FRONT] Erro resposta:', error.response.data);
+      }
       return { sucesso: false, mensagem: error.response?.data?.error || 'Erro ao adicionar produto' };
     } finally {
       carregandoCarrinho.value = false;
@@ -125,19 +138,29 @@ export function useCarrinho() {
    * Atualiza quantidade de um item
    */
   const atualizarQuantidade = async (itemId, novaQuantidade) => {
-    carregandoCarrinho.value = true;
-
+    // Não mexe em carregandoCarrinho para evitar piscar a tela
     try {
       if (usuarioLogado.value) {
         // Usuário logado: usa API
         if (novaQuantidade <= 0) {
           await api.delete(`/carrinho/${itemId}/`);
+          // Remove localmente
+          itensCarrinho.value = itensCarrinho.value.filter(item => item.id !== itemId);
         } else {
-          await api.patch(`/carrinho/${itemId}/atualizar_quantidade/`, {
+          const resp = await api.patch(`/carrinho/${itemId}/atualizar_quantidade/`, {
             quantidade: novaQuantidade
           });
+          // Atualiza localmente apenas o item alterado
+          const idx = itensCarrinho.value.findIndex(item => item.id === itemId);
+          if (idx !== -1 && resp.data) {
+            // Atualiza o item com os dados retornados pela API (garante consistência)
+            itensCarrinho.value[idx] = { ...itensCarrinho.value[idx], ...resp.data };
+          } else if (idx !== -1) {
+            // Se a API não retornar o item, atualiza só a quantidade e subtotal
+            itensCarrinho.value[idx].quantidade = novaQuantidade;
+            itensCarrinho.value[idx].subtotal = novaQuantidade * parseFloat(itensCarrinho.value[idx].preco_unitario);
+          }
         }
-        await carregarCarrinho();
       } else {
         // Usuário anônimo: usa localStorage
         if (novaQuantidade <= 0) {

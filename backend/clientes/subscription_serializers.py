@@ -26,6 +26,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class FornecedorSerializer(serializers.ModelSerializer):
     class Meta:
         model = Fornecedor
-        fields = ['id', 'nome', 'email', 'telefone', 'cnpj', 'endereco', 'cidade', 
-                  'especialidade', 'data_criacao']
+        fields = [
+            'id', 'nome', 'email', 'telefone', 'cnpj', 'endereco', 'cep', 'bairro', 'estado', 'cidade',
+            'especialidade', 'representante_nome', 'representante_telefone', 'data_criacao'
+        ]
         read_only_fields = ['id', 'data_criacao']

@@ -652,9 +652,6 @@ export default {
   border-left-color: #ffa500;
 }
 
-.agendamento-card.status-confirmado {
-}
-
 .agendamento-card.status-concluido {
   border-left-color: #00d084;
 }

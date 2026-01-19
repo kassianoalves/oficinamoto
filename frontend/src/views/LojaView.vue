@@ -1,8 +1,10 @@
 <template>
   <div class="loja-container">
     <div class="header">
-      <h1>🛍️ Minha Loja</h1>
-      <p class="subtitle">Produtos disponíveis do Estoque para venda</p>
+      <div class="menu-bar">
+        <h1 style="display:inline-block; margin-right: 1.5rem;">🛍️ Minha Loja</h1>
+      </div>
+      <p class="subtitle">Produtos disponíveis do Estoque</p>
     </div>
 
     <!-- Filtros -->
@@ -19,6 +21,7 @@
           {{ cat }}
         </option>
       </select>
+      <button class="btn-orcamento" @click="criarOrcamento">+ Novo Orçamento</button>
     </div>
 
     <div v-if="carregando" class="loading">
@@ -160,11 +163,13 @@
 import { ref, computed, onMounted } from 'vue';
 import api from '../api.js';
 import { useCarrinho } from '@/composables/useCarrinho.js';
+import { useToast } from '@/composables/useToast.js';
 
 export default {
   name: 'LojaView',
   setup() {
     const produtos = ref([]);
+      const { success, error } = useToast();
     const carregando = ref(false);
     const filtroNome = ref('');
     const filtroCategoria = ref('');
@@ -263,12 +268,14 @@ export default {
     const adicionarAoCarrinho = () => {
       console.log('Produto adicionado ao carrinho:', produtoSelecionado.value);
       // Integrar com o sistema de carrinho
-      useCarrinho().adicionarAoCarrinho(produtoSelecionado.value, 1).then(resultado => {
+      const { adicionarAoCarrinho, abrirDrawer } = useCarrinho();
+      adicionarAoCarrinho(produtoSelecionado.value, 1).then(resultado => {
         if (resultado.sucesso) {
-          alert(resultado.mensagem);
+          success(resultado.mensagem || 'Produto adicionado ao carrinho!');
           fecharModal();
+          abrirDrawer(); // Abre o carrinho automaticamente
         } else {
-          alert(resultado.mensagem);
+          error(resultado.mensagem || 'Erro ao adicionar ao carrinho');
         }
       });
     };
@@ -283,6 +290,11 @@ export default {
 
     const fecharLightbox = () => {
       fotoExpandida.value = null;
+    };
+
+    const criarOrcamento = () => {
+      // Aqui você pode redirecionar para uma tela de orçamento ou abrir um modal
+      // TODO: Adicionar feedback visual para orçamento
     };
 
     onMounted(() => {
@@ -308,7 +320,8 @@ export default {
       adicionarAoCarrinho,
       fotoExpandida,
       expandirFoto,
-      fecharLightbox
+      fecharLightbox,
+      criarOrcamento,
     };
   }
 };
@@ -340,9 +353,9 @@ export default {
 /* Filtros */
 .filtros {
   display: flex;
-  gap: 10px;
-  margin-bottom: 20px;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
 }
 
 .filter-input,
@@ -361,12 +374,13 @@ export default {
 }
 
 .filter-input {
-  flex: 1;
-  min-width: 200px;
+  flex: 2;
+  min-width: 180px;
 }
 
 .filter-select {
-  min-width: 150px;
+  flex: 1;
+  min-width: 140px;
 }
 
 /* Grid de Produtos */
@@ -377,8 +391,8 @@ export default {
 }
 
 .produto-card {
-  background: white;
-  border: 2px solid #eee;
+  background: rgba(162, 0, 255, 0.199);
+  border: 2px solid #8400ff71;
   border-radius: 12px;
   overflow: hidden;
   transition: all 0.3s;
@@ -852,7 +866,7 @@ export default {
 
 .modal-descricao {
   margin-top: 12px;
-  padding-top: 12px;
+  padding-top: 1px;
   border-top: 1px solid #f0f0f0;
 }
 
@@ -1007,5 +1021,24 @@ export default {
   .modal-footer {
     flex-direction: column;
   }
+}
+
+.btn-orcamento {
+  background: linear-gradient(90deg, #4facfe 60%, #00f2fe 100%);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 1.05rem;
+  padding: 0.7rem 1.5rem;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(79, 172, 254, 0.10);
+  transition: background 0.18s, box-shadow 0.18s;
+  margin-left: 0.5rem;
+}
+
+.btn-orcamento:hover {
+  background: linear-gradient(90deg, #00f2fe 0%, #4facfe 100%);
+  box-shadow: 0 4px 16px rgba(79, 172, 254, 0.13);
 }
 </style>

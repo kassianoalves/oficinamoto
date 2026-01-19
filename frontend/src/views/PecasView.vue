@@ -359,8 +359,8 @@ export default {
 }
 
 .peca-card {
-  background: white;
-  border: 2px solid #e0e0e0;
+  background: rgba(140, 0, 255, 0.151);
+  border: 2px solid #af52ee9f;
   border-radius: 12px;
   padding: 0.5rem;
   transition: all 0.2s;

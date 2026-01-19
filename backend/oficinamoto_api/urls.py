@@ -6,7 +6,7 @@ from rest_framework.routers import DefaultRouter
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 
-from clientes.views import ClienteViewSet, ProdutoLojaViewSet
+from clientes.views import ClienteViewSet, ProdutoLojaViewSet, FornecedorViewSet
 from clientes.auth_views import RegisterView, LoginView, ForgotPasswordView, ResetPasswordView, UserDetailView, LogoutView, CheckUserExistsView
 from motos.views import MotoViewSet, PecaViewSet
 from manutencoes.views import ManutencaoViewSet, AgendamentoViewSet, LembreteViewSet, PontosFidelidadeViewSet, PecaViewSet as PecaManuViewSet, ItemAgendamentoViewSet, CarrinhoViewSet
@@ -53,6 +53,7 @@ router.register(r'agendamentos', AgendamentoViewSet, basename='agendamento')
 router.register(r'lembretes', LembreteViewSet, basename='lembrete')
 router.register(r'pontos-fidelidade', PontosFidelidadeViewSet, basename='pontos-fidelidade')
 router.register(r'produtos-loja', ProdutoLojaViewSet, basename='produto-loja')
+router.register(r'fornecedores', FornecedorViewSet, basename='fornecedor')
 router.register(r'carrinho', CarrinhoViewSet, basename='carrinho')
 
 

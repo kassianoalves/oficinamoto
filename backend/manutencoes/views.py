@@ -251,20 +251,27 @@ class CarrinhoViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def adicionar(self, request):
-        """Adiciona ou atualiza item no carrinho"""
+        """Adiciona ou atualiza item no carrinho (com logs de depuração)"""
+        import logging
+        logger = logging.getLogger('django')
         peca_id = request.data.get('peca_id')
         quantidade = int(request.data.get('quantidade', 1))
 
+        logger.info(f"[CARRINHO] Requisição adicionar: user={request.user}, peca_id={peca_id}, quantidade={quantidade}")
+
         if not peca_id:
+            logger.warning('[CARRINHO] Falha: peca_id não informado')
             return Response({'error': 'peca_id é obrigatório'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             peca = Peca.objects.get(id=peca_id, ativa=True)
         except Peca.DoesNotExist:
+            logger.warning(f'[CARRINHO] Peça não encontrada: id={peca_id}')
             return Response({'error': 'Peça não encontrada'}, status=status.HTTP_404_NOT_FOUND)
 
         # Validar estoque
         if quantidade > peca.quantidade:
+            logger.warning(f'[CARRINHO] Estoque insuficiente: solicitado={quantidade}, disponivel={peca.quantidade}')
             return Response(
                 {'error': f'Estoque insuficiente. Disponível: {peca.quantidade}'},
                 status=status.HTTP_400_BAD_REQUEST
@@ -272,6 +279,7 @@ class CarrinhoViewSet(viewsets.ModelViewSet):
 
         # Buscar ou criar item no carrinho
         if request.user.is_authenticated:
+            logger.info(f'[CARRINHO] Usuário autenticado: {request.user}')
             item, created = ItemCarrinho.objects.get_or_create(
                 usuario=request.user,
                 peca=peca,
@@ -282,7 +290,7 @@ class CarrinhoViewSet(viewsets.ModelViewSet):
             if not session_key:
                 request.session.create()
                 session_key = request.session.session_key
-            
+            logger.info(f'[CARRINHO] Sessão anônima: {session_key}')
             item, created = ItemCarrinho.objects.get_or_create(
                 sessao_id=session_key,
                 peca=peca,
@@ -293,14 +301,19 @@ class CarrinhoViewSet(viewsets.ModelViewSet):
             # Se já existe, atualiza quantidade
             nova_quantidade = item.quantidade + quantidade
             if nova_quantidade > peca.quantidade:
+                logger.warning(f'[CARRINHO] Atualização excede estoque: nova_quantidade={nova_quantidade}, disponivel={peca.quantidade}')
                 return Response(
                     {'error': f'Estoque insuficiente. Disponível: {peca.quantidade}'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
             item.quantidade = nova_quantidade
             item.save()
+            logger.info(f'[CARRINHO] Quantidade atualizada: item_id={item.id}, nova_quantidade={item.quantidade}')
+        else:
+            logger.info(f'[CARRINHO] Novo item criado: item_id={item.id}, quantidade={item.quantidade}')
 
         serializer = ItemCarrinhoSerializer(item, context={'request': request})
+        logger.info(f'[CARRINHO] Resposta para frontend: {serializer.data}')
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)
 
     @action(detail=True, methods=['patch'])

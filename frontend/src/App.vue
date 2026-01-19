@@ -1,44 +1,38 @@
-﻿<template>
+﻿
+<template>
   <div id="app" class="app-container">
+    <!-- NAVBAR DESKTOP -->
     <nav v-if="!isAuthPage" class="navbar">
-      <!-- Botão Hambúrguer Mobile -->
-      <button class="hamburger-btn" @click="toggleMobileMenu" :class="{ active: showMobileMenu }">
-        <span></span>
-        <span></span>
-        <span></span>
-      </button>
-      <div class="logo">
-        <img v-if="siteLogo" :src="siteLogo" alt="Logo" class="logo-img" />
-        <div class="logo-text">
-          <button v-if="isAdmin" @click="openLogoModal" class="btn-edit-logo" title="Editar logo e nome do site">
-            ✏️
-          </button>
-          <h1>{{ siteName }}</h1>
+      <div class="navbar-left">
+        <div class="logo">
+          <img v-if="siteLogo" :src="siteLogo" alt="Logo" class="logo-img" />
+          <div class="logo-text">
+            <button v-if="isAdmin" @click="openLogoModal" class="btn-edit-logo" title="Editar logo e nome do site">✏️</button>
+            <h1>{{ siteName }}</h1>
+          </div>
         </div>
+        <button class="hamburger-btn" @click="toggleMobileMenu" :class="{ active: showMobileMenu }">
+          <span></span>
+          <span></span>
+          <span></span>
+        </button>
       </div>
       <div class="nav-sections desktop-menu">
         <ul class="nav-menu">
-          <!-- Menu Base (todos os usuários autenticados) -->
           <li v-if="isAuthenticated"><router-link to="/">🏠 Home</router-link></li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
           <li v-if="isAuthenticated"><router-link to="/clientes">👥 Clientes</router-link></li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
           <li v-if="isAuthenticated"><router-link to="/manutencoes">📅 Agendamento</router-link></li>
-      
-          <!-- Menu PRO (PRO e Enterprise) -->
           <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/pecas">📦 Estoque</router-link></li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)" class="menu-separator">|</li>
           <li v-if="isAuthenticated && (isPro || isEnterprise)"><router-link to="/loja">🛒 Loja</router-link></li>
-          
-          <!-- Menu ENTERPRISE -->
           <li v-if="isAuthenticated && isEnterprise" class="menu-separator">|</li>
           <li v-if="isAuthenticated && isEnterprise"><router-link to="/fornecedores">🤝 Fornecedores</router-link></li>
         </ul>
         <div class="nav-right">
           <router-link v-if="isAuthenticated && !isEnterprise" to="/planos" class="menu-plans">💎 Upgrade</router-link>
-          
-          <!-- Ícone do Carrinho -->
           <button v-if="isAuthenticated && (isPro || isEnterprise)" @click="toggleCarrinho" class="btn-carrinho" title="Meu Carrinho">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="9" cy="21" r="1"/>
@@ -47,114 +41,106 @@
             </svg>
             <span v-if="totalItensCarrinho > 0" class="carrinho-badge">{{ totalItensCarrinho }}</span>
           </button>
-          
           <div class="nav-actions">
-          <template v-if="!isAuthenticated">
-            <router-link class="nav-btn" to="/login">Login</router-link>
-            <router-link class="nav-btn nav-btn-primary" to="/register">Cadastrar</router-link>
-          </template>
-          <template v-else>
-            <button @click="openProfileModal" :class="['btn-user-profile', profilePlanClass]" :title="`Plano: ${getPlanName()}`">
-              <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" :class="['user-avatar', avatarBorderClass]" />
-              <div class="user-info">
-                <span class="user-name">{{ displayName }}</span>
-                <span class="user-plan">
-                  <span v-if="isPro" class="plan-label plan-pro">PRO</span>
-                  <span v-if="isEnterprise" class="plan-label plan-enterprise">ENTERPRISE</span>
-                  <span v-if="isFree" class="plan-label plan-basico">BÁSICO</span>
-                </span>
-              </div>
-            </button>
-          </template>
-          </div>
-        </div>
-      </div>
-      <!-- Sidebar Mobile Menu -->
-      <div class="mobile-sidebar-overlay" :class="{ active: showMobileMenu }" @click="closeMobileMenu"></div>
-      <div class="mobile-sidebar" :class="{ active: showMobileMenu }">
-        <div class="sidebar-header">
-          <div class="sidebar-user">
-            <template v-if="isAuthenticated">
-              <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" class="sidebar-avatar" />
-              <div class="sidebar-user-info">
-                <span class="sidebar-username">{{ displayName }}</span>
-                <span v-if="isPro" class="sidebar-badge badge-pro">PRO</span>
-                <span v-if="isEnterprise" class="sidebar-badge badge-enterprise">ENTERPRISE</span>
-                <span v-if="isFree" class="sidebar-badge badge-free">GRÁTIS</span>
-              </div>
+            <template v-if="!isAuthenticated">
+              <router-link class="nav-btn" to="/login">Login</router-link>
+              <router-link class="nav-btn nav-btn-primary" to="/register">Cadastrar</router-link>
             </template>
             <template v-else>
-              <span class="sidebar-guest">Bem-vindo!</span>
+              <button @click="openProfileModal" :class="['btn-user-profile', profilePlanClass]" :title="`Plano: ${getPlanName()}`">
+                <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" :class="['user-avatar', avatarBorderClass]" />
+                <div class="user-info">
+                  <span class="user-name">{{ displayName }}</span>
+                  <span class="user-plan">
+                    <span v-if="isPro" class="plan-label plan-pro">PRO</span>
+                    <span v-if="isEnterprise" class="plan-label plan-enterprise">ENTERPRISE</span>
+                    <span v-if="isFree" class="plan-label plan-basico">BÁSICO</span>
+                  </span>
+                </div>
+              </button>
             </template>
           </div>
-          <button class="sidebar-close" @click="closeMobileMenu">✕</button>
         </div>
-        
-        <nav class="sidebar-nav">
-          <template v-if="isAuthenticated">
-            <router-link to="/" class="sidebar-link" @click="closeMobileMenu">
-              <span class="sidebar-icon">🏠</span>
-              Home
-            </router-link>
-            <router-link to="/clientes" class="sidebar-link" @click="closeMobileMenu">
-              <span class="sidebar-icon">👥</span>
-              Clientes
-            </router-link>
-            <router-link to="/manutencoes" class="sidebar-link" @click="closeMobileMenu">
-              <span class="sidebar-icon">📅</span>
-              Agendamento
-            </router-link>
-            
-            <div v-if="isPro || isEnterprise" class="sidebar-divider"></div>
-            
-            <router-link v-if="isPro || isEnterprise" to="/pecas" class="sidebar-link sidebar-link-pro" @click="closeMobileMenu">
-              <span class="sidebar-icon">📦</span>
-              Estoque
-              <span class="sidebar-tag">PRO</span>
-            </router-link>
-            
-            <router-link v-if="isPro || isEnterprise" to="/loja" class="sidebar-link sidebar-link-pro" @click="closeMobileMenu">
-              <span class="sidebar-icon">🛒</span>
-              Loja
-              <span class="sidebar-tag">PRO</span>
-            </router-link>
-            
-            <router-link v-if="isEnterprise" to="/fornecedores" class="sidebar-link sidebar-link-enterprise" @click="closeMobileMenu">
-              <span class="sidebar-icon">🤝</span>
-              Fornecedores
-              <span class="sidebar-tag">ENTERPRISE</span>
-            </router-link>
-            
-            <div class="sidebar-divider"></div>
-            
-            <router-link v-if="!isEnterprise" to="/planos" class="sidebar-link sidebar-link-plans" @click="closeMobileMenu">
-              <span class="sidebar-icon">💎</span>
-              Upgrade
-            </router-link>
-            
-            <button @click="openProfileModal; closeMobileMenu()" class="sidebar-link sidebar-button">
-              <span class="sidebar-icon">⚙️</span>
-              Perfil
-            </button>
-            
-            <button @click="logout" class="sidebar-link sidebar-button sidebar-logout">
-              <span class="sidebar-icon">🚪</span>
-              Sair
-            </button>
-          </template>
-          <template v-else>
-            <router-link to="/login" class="sidebar-link" @click="closeMobileMenu">
-              <span class="sidebar-icon">🔐</span>
-              Login
-            </router-link>
-            <router-link to="/register" class="sidebar-link sidebar-link-primary" @click="closeMobileMenu">
-              <span class="sidebar-icon">📝</span>
-              Cadastrar
-            </router-link>
-          </template>
-        </nav>
       </div>
     </nav>
+
+    <!-- SIDEBAR MOBILE -->
+    <div class="mobile-sidebar-overlay" :class="{ active: showMobileMenu }" @click="closeMobileMenu"></div>
+    <div class="mobile-sidebar" :class="{ active: showMobileMenu }">
+      <div class="sidebar-header">
+        <div class="sidebar-user">
+          <template v-if="isAuthenticated">
+            <img :src="userData.avatar_thumb || userData.avatar || avatarInitials" alt="Avatar" class="sidebar-avatar" />
+            <div class="sidebar-user-info">
+              <span class="sidebar-username">{{ displayName }}</span>
+              <span v-if="isPro" class="sidebar-badge badge-pro">PRO</span>
+              <span v-if="isEnterprise" class="sidebar-badge badge-enterprise">ENTERPRISE</span>
+              <span v-if="isFree" class="sidebar-badge badge-free">GRÁTIS</span>
+            </div>
+          </template>
+          <template v-else>
+            <span class="sidebar-guest">Bem-vindo!</span>
+          </template>
+        </div>
+        <button class="sidebar-close" @click="closeMobileMenu">✕</button>
+      </div>
+      <nav class="sidebar-nav">
+        <template v-if="isAuthenticated">
+          <router-link to="/" class="sidebar-link" @click="closeMobileMenu">
+            <span class="sidebar-icon">🏠</span>
+            Home
+          </router-link>
+          <router-link to="/clientes" class="sidebar-link" @click="closeMobileMenu">
+            <span class="sidebar-icon">👥</span>
+            Clientes
+          </router-link>
+          <router-link to="/manutencoes" class="sidebar-link" @click="closeMobileMenu">
+            <span class="sidebar-icon">📅</span>
+            Agendamento
+          </router-link>
+          <div v-if="isPro || isEnterprise" class="sidebar-divider"></div>
+          <router-link v-if="isPro || isEnterprise" to="/pecas" class="sidebar-link sidebar-link-pro" @click="closeMobileMenu">
+            <span class="sidebar-icon">📦</span>
+            Estoque
+            <span class="sidebar-tag">PRO</span>
+          </router-link>
+          <router-link v-if="isPro || isEnterprise" to="/loja" class="sidebar-link sidebar-link-pro" @click="closeMobileMenu">
+            <span class="sidebar-icon">🛒</span>
+            Loja
+            <span class="sidebar-tag">PRO</span>
+          </router-link>
+          <router-link v-if="isEnterprise" to="/fornecedores" class="sidebar-link sidebar-link-enterprise" @click="closeMobileMenu">
+            <span class="sidebar-icon">🤝</span>
+            Fornecedores
+            <span class="sidebar-tag">ENTERPRISE</span>
+          </router-link>
+          <div class="sidebar-divider"></div>
+          <router-link v-if="!isEnterprise" to="/planos" class="sidebar-link sidebar-link-plans" @click="closeMobileMenu">
+            <span class="sidebar-icon">💎</span>
+            Upgrade
+          </router-link>
+          <button @click="openProfileModal; closeMobileMenu()" class="sidebar-link sidebar-button">
+            <span class="sidebar-icon">⚙️</span>
+            Perfil
+          </button>
+          <button @click="logout" class="sidebar-link sidebar-button sidebar-logout">
+            <span class="sidebar-icon">🚪</span>
+            Sair
+          </button>
+        </template>
+        <template v-else>
+          <router-link to="/login" class="sidebar-link" @click="closeMobileMenu">
+            <span class="sidebar-icon">🔐</span>
+            Login
+          </router-link>
+          <router-link to="/register" class="sidebar-link sidebar-link-primary" @click="closeMobileMenu">
+            <span class="sidebar-icon">📝</span>
+            Cadastrar
+          </router-link>
+        </template>
+      </nav>
+    </div>
+
     <main :class="['main-content', { 'main-auth': isAuthPage }]">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
@@ -162,10 +148,9 @@
         </transition>
       </router-view>
     </main>
-    
+
     <!-- Drawer do Carrinho -->
     <CarrinhoDrawer v-if="isAuthenticated && (isPro || isEnterprise)" />
-    
     <ProfileModal 
       :show="showProfile" 
       :userData="userData"
@@ -180,7 +165,6 @@
       @close="showLogoModal = false"
       @update="handleLogoUpdate"
     />
-    <ToastNotification />
   </div>
 </template>
 
@@ -214,18 +198,14 @@ export default {
     const showProfile = ref(false)
     const userData = ref({})
     const showMobileMenu = ref(false)
-    
     // Estado de assinatura centralizado no composable
     const { userSubscription, isPro, isEnterprise, isFree, loadSubscription } = useSubscription()
-    
     // Carrinho
     const { totalItens: totalItensCarrinho, carregarCarrinho, toggleDrawer: toggleCarrinho, migrarCarrinhoApoLogin } = useCarrinho()
-    
     const showLogoModal = ref(false)
     const siteLogo = ref('')
     const siteName = ref('Moto Express')
     const isAdmin = computed(() => userData.value.is_admin || false)
-
     const displayName = computed(() => {
       // Prioridade: first_name + last_name > first_name sozinho > username
       if (userData.value.first_name && userData.value.last_name) {
@@ -236,16 +216,12 @@ export default {
       }
       return username.value
     })
-
     const isAuthPage = computed(() => {
       const authPages = ['Login', 'Register', 'ForgotPassword']
       return authPages.includes(route.name)
     })
-
     // Funções de utilidade de avatar importadas de utils/avatarUtils.js
-
     const avatarInitials = computed(() => makeInitialsAvatar(displayName.value || username.value))
-
     const getPlanName = () => {
       const planName = userSubscription.value?.plan_name
       const names = {
@@ -255,23 +231,18 @@ export default {
       }
       return names[planName] || 'Sem Plano'
     }
-
     const checkAuth = async () => {
       const token = authStorage.getToken()
       const user = authStorage.getUser()
-      
       isAuthenticated.value = !!token
-      
       if (user) {
         try {
           userData.value = user
           username.value = userData.value.username || userData.value.email
-          
           // Carregar subscrição do usuário (state centralizado)
           if (token) {
             await loadSubscription()
-            
-            // Carregar carrinho e migrar do localStorage se necessário
+            // Primeiro migra o carrinho local, depois recarrega do backend
             await migrarCarrinhoApoLogin()
             await carregarCarrinho()
           }
@@ -285,39 +256,31 @@ export default {
       }
       return isAuthenticated.value
     }
-
     const currentPlan = computed(() => userSubscription.value?.plan_name || 'free')
-
     const avatarBorderClass = computed(() => {
       if (isEnterprise.value) return 'border-enterprise'
       if (isPro.value) return 'border-pro'
       return 'border-free'
     })
-
     const profilePlanClass = computed(() => {
       if (isEnterprise.value) return 'profile-theme-enterprise'
       if (isPro.value) return 'profile-theme-pro'
       return 'profile-theme-basic'
     })
-
     const openProfileModal = () => {
       showProfile.value = true
     }
-
     const handleProfileUpdate = (updatedUser) => {
       if (updatedUser.avatar) updatedUser.avatar = withCacheBust(updatedUser.avatar)
       if (updatedUser.avatar_thumb) updatedUser.avatar_thumb = withCacheBust(updatedUser.avatar_thumb)
       userData.value = updatedUser
       username.value = updatedUser.username || updatedUser.email
-      
       // Atualizar storage com os dados mais recentes
       authStorage.setUser(updatedUser)
     }
-
     const openLogoModal = () => {
       showLogoModal.value = true
     }
-
     const handleLogoUpdate = (settings) => {
       if (settings.logo_url) {
         siteLogo.value = withCacheBust(settings.logo_url)
@@ -326,7 +289,6 @@ export default {
         siteName.value = settings.site_name
       }
     }
-
     const loadSiteSettings = async () => {
       try {
         const res = await api.get('/subscription/site-settings/')
@@ -340,7 +302,6 @@ export default {
         console.log('Usando configurações padrão')
       }
     }
-
     const logout = () => {
       closeMobileMenu()
       authStorage.clear()
@@ -351,7 +312,6 @@ export default {
       showProfile.value = false
       router.push('/login')
     }
-
     const toggleMobileMenu = () => {
       showMobileMenu.value = !showMobileMenu.value
       if (showMobileMenu.value) {
@@ -360,12 +320,10 @@ export default {
         document.body.style.overflow = ''
       }
     }
-
     const closeMobileMenu = () => {
       showMobileMenu.value = false
       document.body.style.overflow = ''
     }
-
     // Watcher para monitorar mudanças no storage (para atualizar menu após login)
     watch(
       () => authStorage.getToken(),
@@ -375,12 +333,10 @@ export default {
         }
       }
     )
-
     onMounted(async () => {
       await checkAuth()
       await loadSiteSettings()
     })
-
     return {
       isAuthenticated,
       username,
